@@ -1,0 +1,443 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from './supabaseClient';
+import {
+    ChevronRight,
+    CheckCircle2,
+    Trophy,
+    Users,
+    BarChart3,
+    ClipboardCheck,
+    User,
+    AlertCircle,
+    RefreshCw,
+    Loader2
+} from 'lucide-react';
+
+const QUESTIONS = [
+    {
+        id: 1,
+        question: "¿Cuál es el propósito fundamental del paso 'Red' en el ciclo TDD?",
+        options: [
+            "Identificar errores de sintaxis en código antiguo.",
+            "Definir el comportamiento esperado mediante una prueba que falle.",
+            "Optimizar el rendimiento del servidor.",
+            "Asegurar que el entorno de CI/CD funcione."
+        ],
+        correct: 1
+    },
+    {
+        id: 2,
+        question: "En TDD, ¿qué se debe hacer inmediatamente después de que una prueba pase (Green)?",
+        options: [
+            "Escribir la siguiente prueba fallida.",
+            "Pasar a producción el código.",
+            "Refactorizar el código para mejorar su estructura.",
+            "Eliminar la prueba para ahorrar espacio."
+        ],
+        correct: 2
+    },
+    {
+        id: 3,
+        question: "¿Cuál es la característica principal de una Prueba Unitaria efectiva?",
+        options: [
+            "Debe probar la integración con la base de datos real.",
+            "Debe ser rápida, aislada y probar una única unidad lógica.",
+            "Debe ser escrita únicamente por el equipo de QA.",
+            "Debe ejecutarse solo una vez al mes."
+        ],
+        correct: 1
+    },
+    {
+        id: 4,
+        question: "En el contexto de pruebas, ¿qué diferencia a un 'Mock' de un 'Stub'?",
+        options: [
+            "Los Stubs son para bases de datos únicamente.",
+            "Los Mocks verifican interacciones; los Stubs solo proveen datos.",
+            "No hay diferencia técnica.",
+            "Los Mocks son más lentos que los Stubs."
+        ],
+        correct: 1
+    },
+    {
+        id: 5,
+        question: "Al usar IA en TDD, ¿cuál es el flujo recomendado?",
+        options: [
+            "Que la IA escriba todo el proyecto sin revisión.",
+            "Escribir la prueba manualmente y pedir a la IA la implementación.",
+            "Generar el código y luego pedirle a la IA que invente las pruebas.",
+            "No usar IA bajo ninguna circunstancia."
+        ],
+        correct: 1
+    }
+];
+
+export default function App() {
+    const [user, setUser] = useState(null);
+    const [view, setView] = useState('login');
+    const [studentName, setStudentName] = useState('');
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+    const [answers, setAnswers] = useState([]);
+    const [finalScore, setFinalScore] = useState(0);
+    const [allResults, setAllResults] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState(null);
+
+    // --- AUTH ---
+    useEffect(() => {
+        const initAuth = async () => {
+            try {
+                const { data, error } = await supabase.auth.signInAnonymously();
+                if (error) throw error;
+                setUser(data.user);
+            } catch (err) {
+                console.error("Auth error:", err);
+                setError("Error de conexión con el servidor de autenticación.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        initAuth();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    // --- FETCH DATA (Realtime) ---
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchResults = async () => {
+            const { data, error } = await supabase
+                .from('results')
+                .select('*')
+                .order('timestamp', { ascending: false });
+
+            if (error) {
+                console.error("Fetch error:", error);
+                setError("No se pudieron cargar los resultados. Verifica tu conexión.");
+            } else {
+                setAllResults(data || []);
+                setError(null);
+            }
+        };
+
+        fetchResults();
+
+        const resultSubscription = supabase
+            .channel('public:results')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
+                fetchResults();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(resultSubscription);
+        };
+    }, [user]);
+
+    const handleStartQuiz = () => {
+        if (studentName.trim().length < 3) return;
+        setError(null);
+        setView('quiz');
+    };
+
+    const handleAnswer = (optionIndex) => {
+        const newAnswers = [...answers, optionIndex];
+        setAnswers(newAnswers);
+
+        if (currentQuestion < QUESTIONS.length - 1) {
+            setCurrentQuestion(currentQuestion + 1);
+        } else {
+            processFinish(newAnswers);
+        }
+    };
+
+    const processFinish = async (finalAnswers) => {
+        setIsSaving(true);
+        const correctCount = finalAnswers.reduce((acc, ans, idx) => {
+            return ans === QUESTIONS[idx].correct ? acc + 1 : acc;
+        }, 0);
+
+        const scorePercentage = (correctCount / QUESTIONS.length) * 100;
+        setFinalScore(scorePercentage);
+
+        if (user) {
+            try {
+                const { error } = await supabase.from('results').insert([{
+                    studentName,
+                    score: scorePercentage,
+                    correctAnswers: correctCount,
+                    totalQuestions: QUESTIONS.length,
+                    uid: user.id
+                }]);
+
+                if (error) throw error;
+                setView('result');
+            } catch (err) {
+                console.error("Save error:", err);
+                setError("Error al guardar tus resultados. Intenta de nuevo.");
+            } finally {
+                setIsSaving(false);
+            }
+        }
+    };
+
+    const stats = useMemo(() => {
+        if (allResults.length === 0) return { avg: 0, total: 0 };
+        const sum = allResults.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        return {
+            avg: (sum / allResults.length).toFixed(1),
+            total: allResults.length
+        };
+    }, [allResults]);
+
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
+            <Loader2 className="animate-spin h-10 w-10 text-indigo-600 mb-4" />
+            <p className="text-slate-500 font-medium">Iniciando sesión segura...</p>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8">
+            <header className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div onClick={() => setView('login')} className="cursor-pointer">
+                    <h1 className="text-2xl font-bold text-indigo-700 flex items-center gap-2">
+                        <ClipboardCheck className="w-8 h-8" />
+                        TDD Mastery Platform
+                    </h1>
+                    <p className="text-slate-500 text-sm">Panel de Evaluación de Ingeniería</p>
+                </div>
+                <nav className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+                    <button onClick={() => setView('login')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${['login', 'quiz',
+                            'result'].includes(view) ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                    >
+                        Examen
+                    </button>
+                    <button onClick={() => setView('dashboard')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                    >
+                        Dashboard
+                    </button>
+                </nav>
+            </header>
+
+            <main className="max-w-4xl mx-auto">
+                {error && (
+                    <div
+                        className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                        <p className="text-sm font-medium">{error}</p>
+                    </div>
+                )}
+
+                {view === 'login' && (
+                    <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 max-w-md mx-auto text-center">
+                        <div
+                            className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <User className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-xl font-bold mb-2">Registro de Estudiante</h2>
+                        <p className="text-slate-500 mb-6 text-sm">Ingresa tu nombre tal como aparecerá en el reporte final.</p>
+                        <input type="text" placeholder="Ej: Juan Pérez"
+                            className="w-full p-4 rounded-xl border-2 border-slate-100 mb-4 focus:border-indigo-500 outline-none transition-all text-lg"
+                            value={studentName} onChange={(e) => setStudentName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleStartQuiz()}
+                        />
+                        <button onClick={handleStartQuiz} disabled={studentName.trim().length < 3 || isSaving}
+                            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
+                            {isSaving ?
+                                <Loader2 className="animate-spin w-5 h-5" /> : 'Comenzar Evaluación'}
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+
+                {view === 'quiz' && (
+                    <div className="bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100">
+                        <div className="flex justify-between items-center mb-8">
+                            <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">
+                                Pregunta {currentQuestion + 1} / {QUESTIONS.length}
+                            </span>
+                            <div className="h-2 w-32 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-indigo-600 transition-all duration-500" style={{
+                                    width: `${((currentQuestion +
+                                        1) / QUESTIONS.length) * 100}%`
+                                }}></div>
+                            </div>
+                        </div>
+
+                        <h2 className="text-2xl font-bold mb-10 leading-tight text-slate-800">
+                            {QUESTIONS[currentQuestion].question}
+                        </h2>
+
+                        <div className="space-y-4">
+                            {QUESTIONS[currentQuestion].options.map((option, idx) => (
+                                <button key={idx} disabled={isSaving} onClick={() => handleAnswer(idx)}
+                                    className="w-full text-left p-5 rounded-2xl border-2 border-slate-50 hover:border-indigo-400
+              hover:bg-indigo-50 transition-all group flex items-start gap-4 disabled:opacity-50"
+                                >
+                                    <span
+                                        className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center font-black group-hover:bg-indigo-600 group-hover:text-white shrink-0 transition-colors">
+                                        {String.fromCharCode(65 + idx)}
+                                    </span>
+                                    <span
+                                        className="text-lg font-medium text-slate-700 group-hover:text-indigo-900 pt-1 leading-snug">{option}</span>
+                                </button>
+                            ))}
+                        </div>
+                        {isSaving && (
+                            <div className="mt-8 flex items-center justify-center gap-3 text-indigo-600 font-bold">
+                                <Loader2 className="animate-spin w-5 h-5" />
+                                Guardando respuestas...
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {view === 'result' && (
+                    <div
+                        className="bg-white p-12 rounded-3xl shadow-2xl border border-slate-100 text-center animate-in zoom-in-95 duration-300">
+                        <div
+                            className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                            <Trophy className="w-12 h-12" />
+                        </div>
+                        <h2 className="text-3xl font-black mb-2 text-slate-900">¡Evaluación Finalizada!</h2>
+                        <p className="text-slate-500 mb-10 text-lg font-medium">Buen trabajo, <span
+                            className="text-indigo-600">{studentName}</span>. Hemos registrado tu progreso.</p>
+
+                        <div className="inline-block bg-slate-50 p-8 rounded-3xl border-2 border-slate-100 mb-10 min-w-[200px]">
+                            <span className="block text-xs text-slate-400 uppercase font-black mb-2 tracking-tighter">Puntaje
+                                Obtenido</span>
+                            <span className={`text-6xl font-black ${finalScore >= 70 ? 'text-green-600' : 'text-orange-500'}`}>
+                                {Math.round(finalScore)}%
+                            </span>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-4 justify-center">
+                            <button onClick={() => setView('dashboard')}
+                                className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all
+              flex items-center justify-center gap-2 shadow-xl shadow-indigo-100"
+                            >
+                                Ver Dashboard Global
+                                <BarChart3 className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => {
+                                setCurrentQuestion(0);
+                                setAnswers([]);
+                                setView('login');
+                            }}
+                                className="text-slate-500 px-10 py-4 rounded-2xl font-bold hover:bg-slate-100 transition-all"
+                            >
+                                Cerrar sesión
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {view === 'dashboard' && (
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-6">
+                                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                    <Users className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Estudiantes</p>
+                                    <p className="text-3xl font-black text-slate-800">{stats.total}</p>
+                                </div>
+                            </div>
+                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-6">
+                                <div className="p-4 bg-green-50 text-green-600 rounded-2xl">
+                                    <Trophy className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Promedio</p>
+                                    <p className="text-3xl font-black text-slate-800">{stats.avg}%</p>
+                                </div>
+                            </div>
+                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-6">
+                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl">
+                                    <RefreshCw className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Estado</p>
+                                    <p className="text-sm font-bold text-slate-800 uppercase">Sincronizado</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 className="font-black text-xl text-slate-800 flex items-center gap-2">
+                                    <BarChart3 className="text-indigo-600" /> Historial de Resultados
+                                </h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-slate-400 text-xs uppercase font-black tracking-widest">
+                                            <th className="px-8 py-6">Ingeniero</th>
+                                            <th className="px-8 py-6">Puntaje</th>
+                                            <th className="px-8 py-6">Fecha</th>
+                                            <th className="px-8 py-6 text-right">Estatus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {allResults.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="px-8 py-20 text-center">
+                                                    <div className="flex flex-col items-center opacity-30">
+                                                        <ClipboardCheck className="w-16 h-16 mb-4" />
+                                                        <p className="text-lg font-bold uppercase tracking-tighter">Esperando el primer envío...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            allResults.map((res) => (
+                                                <tr key={res.id} className="hover:bg-slate-50/80 transition-colors">
+                                                    <td className="px-8 py-6">
+                                                        <div className="font-bold text-slate-800">{res.studentName}</div>
+                                                        <div className="text-[10px] text-slate-400 font-mono uppercase">{res.id.substring(0, 8)}</div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-end gap-1">
+                                                            <span className="text-2xl font-black text-slate-800">{Math.round(res.score)}%</span>
+                                                            <span
+                                                                className="text-xs text-slate-400 mb-1 font-bold">({res.correctAnswers}/{res.totalQuestions})</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-sm font-medium text-slate-500">
+                                                        {res.timestamp ? new Date(res.timestamp).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '---'}
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest
+                        ${res.score >= 70 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                            {res.score >= 70 ? 'Passed' : 'Review'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </main>
+
+            <footer
+                className="max-w-4xl mx-auto mt-16 pt-8 border-t border-slate-200 flex justify-between items-center text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                <span>TDD AI Course Tools</span>
+                <span>App ID: Supabase-v1</span>
+            </footer>
+        </div>
+    );
+}
