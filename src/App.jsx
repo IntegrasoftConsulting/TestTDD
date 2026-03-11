@@ -86,6 +86,11 @@ export default function App() {
     // --- AUTH ---
     useEffect(() => {
         const initAuth = async () => {
+            if (!supabase) {
+                setError("Faltan variables de entorno de Supabase (VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY) en el entorno de build.");
+                setLoading(false);
+                return;
+            }
             try {
                 const { data, error } = await supabase.auth.signInAnonymously();
                 if (error) throw error;
@@ -99,17 +104,19 @@ export default function App() {
         };
         initAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+        if (supabase) {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                setUser(session?.user ?? null);
+                setLoading(false);
+            });
 
-        return () => subscription.unsubscribe();
+            return () => subscription.unsubscribe();
+        }
     }, []);
 
     // --- FETCH DATA (Realtime) ---
     useEffect(() => {
-        if (!user) return;
+        if (!user || !supabase) return;
 
         const fetchResults = async () => {
             const { data, error } = await supabase
@@ -167,6 +174,7 @@ export default function App() {
         setFinalScore(scorePercentage);
 
         if (user) {
+            if (!supabase) return;
             try {
                 const { error } = await supabase.from('results').insert([{
                     studentName,
