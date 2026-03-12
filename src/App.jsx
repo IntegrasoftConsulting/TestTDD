@@ -178,22 +178,19 @@ export default function App() {
 
     // --- FETCH DATA (Realtime) ---
     useEffect(() => {
-        if (!user || !supabase) return;
+        if (!user || !supabase || !isLoggedIn) return;
 
         const fetchInitialData = async () => {
-            if (!user) return;
             const { data, error } = await supabase
                 .from('results')
                 .select('*')
-                .eq('uid', user.id)
+                .eq('studentName', studentName)
                 .order('timestamp', { ascending: false });
 
             if (error) {
-                console.error("Fetch error:", error);
-                setError("No se pudieron cargar los resultados. Verifica tu conexión.");
-            } else {
-                setAllResults(data || []);
-                setError(null);
+                console.error("Error fetching data:", error);
+            } else if (data) {
+                setAllResults(data);
             }
         };
 
@@ -203,7 +200,7 @@ export default function App() {
             .channel('public:results')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
                 // Only refetch if the change is relevant to the current user's results
-                if (payload.new?.uid === user.id || payload.old?.uid === user.id) {
+                if (payload.new?.studentName === studentName || payload.old?.studentName === studentName || payload.new?.uid === user.id) {
                     fetchInitialData();
                 }
             })
@@ -216,7 +213,7 @@ export default function App() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [user, isLoggedIn, studentName]);
 
     const handleLogin = () => {
         if (studentName.trim().length < 3) return;
@@ -429,6 +426,7 @@ export default function App() {
                             <button onClick={() => {
                                 setIsLoggedIn(false);
                                 setStudentName('');
+                                setAllResults([]);
                                 setView('login');
                             }}
                                 className="text-slate-500 px-10 py-4 rounded-2xl font-bold hover:bg-slate-100 transition-all"
