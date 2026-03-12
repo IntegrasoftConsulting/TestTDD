@@ -143,6 +143,7 @@ export default function App() {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
@@ -182,11 +183,16 @@ export default function App() {
         if (!user || !supabase || !isLoggedIn) return;
 
         const fetchInitialData = async () => {
-            const { data, error } = await supabase
-                .from('results')
-                .select('*')
-                // .eq('studentName', studentName) // Dejamos de filtrar por nombre estrictamente para ver el dashboard global o filtramos por UID más adelante
-                .order('timestamp', { ascending: false });
+            // Si el usuario es administrador, traemos todos los resultados.
+            // Si no, filtramos por su propio correo
+            let query = supabase.from('results').select('*');
+            
+            if (!isAdmin) {
+                // RLS también nos protegerá aquí si está habilitado en BB.DD.
+                query = query.eq('email', email);
+            }
+
+            const { data, error } = await query.order('timestamp', { ascending: false });
 
             if (error) {
                 console.error("Error fetching data:", error);
@@ -217,9 +223,9 @@ export default function App() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user, isLoggedIn, studentName, view]);
+    }, [user, isLoggedIn, email, isAdmin, view]);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (studentName.trim().length < 3) {
             setError("Por favor, ingresa tu nombre completo (mínimo 3 caracteres).");
             return;
@@ -237,9 +243,37 @@ export default function App() {
             return;
         }
 
+        setIsSaving(true);
         setError(null);
-        setIsLoggedIn(true);
-        setView('dashboard');
+
+        try {
+            // Verificar si el correo pertenece a un administrador consultando la tabla de Supabase
+            const { data, error: adminError } = await supabase
+                .from('admin_users')
+                .select('email')
+                .eq('email', email)
+                .single();
+
+            // Si hay un error distinto a que "no se encontró ninguna fila" (ej. tabla no existe, sin conexión)
+            if (adminError && adminError.code !== 'PGRST116') {
+                console.warn("No se pudo verificar rol de admin:", adminError.message);
+            }
+
+            // Si data existe, es administrador
+            if (data) {
+                setIsAdmin(true);
+            } else {
+                setIsAdmin(false);
+            }
+
+            setIsLoggedIn(true);
+            setView('dashboard');
+        } catch (err) {
+            console.error("Login verification error:", err);
+            setError("Ocurrió un error al iniciar sesión. Por favor intenta de nuevo.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleStartTest = (type) => {
@@ -317,6 +351,7 @@ export default function App() {
                     <h1 className="text-2xl font-bold text-indigo-700 flex items-center gap-2">
                         <ClipboardCheck className="w-8 h-8" />
                         Test Mastery Platform
+                        {isAdmin && <span className="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-full uppercase tracking-widest ml-2 align-middle">Admin</span>}
                     </h1>
                     <p className="text-slate-500 text-sm">Panel de Evaluación de Ingeniería</p>
                 </div>
@@ -464,6 +499,7 @@ export default function App() {
                                 setIsLoggedIn(false);
                                 setStudentName('');
                                 setEmail(''); // Limpiamos el correo al cerrar sesión
+                                setIsAdmin(false); // Reseteamos el estado de admin
                                 setAllResults([]);
                                 setView('login');
                             }}
