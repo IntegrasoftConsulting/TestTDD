@@ -92,3 +92,29 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que el Administrador se encuentra en el Dashboard global
 - **Cuando** visualiza la cabecera del panel
 - **Entonces** debe observar tarjetas con las métricas consolidadas (KPIs) de toda la empresa, como: "Total de Tests Completados", "Promedio General de Calificaciones" y el "Estatus de Sincronización".
+
+---
+
+### HU-8: Dashboard Avanzado y Tendencias por Test para Administradores
+
+**Como** administrador o coordinador de evaluaciones
+**Quiero** visualizar una sección de tendencias y analíticas detalladas en el Dashboard global
+**Para** poder analizar el desempeño específico en cada evaluación (TDD vs BDD), identificar las preguntas más falladas y comprender el nivel de conocimiento general del equipo mediante gráficas.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Gráficas de distribución de puntajes (Tortas/Donas)**
+- **Dado** que el usuario administrador se encuentra en el Dashboard global
+- **Cuando** la vista carga los resultados de la base de datos
+- **Entonces** el sistema debe mostrar una gráfica de porcentajes (ej. gráfico circular o de dona) que indique la proporción de exámenes aprobados (>= 70%) versus exámenes reprobados (< 70%).
+
+**Criterios de Aceptación 2: Tendencias detalladas por tipo de test y pregunta (Barras)**
+- **Dado** que el usuario administrador está analizando las métricas
+- **Cuando** selecciona o visualiza la sección de desempeño por pregunta
+- **Entonces** debe ver un gráfico de barras que desglose el porcentaje de aciertos de cada una de las 5 preguntas.
+- **Y** debe existir un mecanismo (ej. pestañas o filtros) para ver estas estadísticas separadas por "Test TDD" y "Test BDD".
+
+**Criterios de Aceptación 3: Acceso denegado a estudiantes**
+- **Dado** que un usuario con rol estándar (estudiante) inicia sesión
+- **Cuando** accede a su Dashboard personal
+- **Entonces** el sistema no debe mostrarle estas analíticas globales de la empresa, limitando su vista a sus métricas individuales o tarjetas básicas.
