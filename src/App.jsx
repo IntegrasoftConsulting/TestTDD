@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import {
     ChevronRight,
     CheckCircle2,
@@ -144,6 +145,7 @@ export default function App() {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
+    const [analyticsFilter, setAnalyticsFilter] = useState('TODO'); // Filtro para gráficas (HU-8)
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
@@ -314,7 +316,8 @@ export default function App() {
                     correctAnswers: correctCount,
                     totalQuestions: QUESTIONS.length,
                     testType: testType,
-                    uid: user.id
+                    uid: user.id,
+                    answers: JSON.stringify(finalAnswers)
                 }]);
 
                 if (error) throw error;
@@ -336,6 +339,66 @@ export default function App() {
             total: allResults.length
         };
     }, [allResults]);
+
+    // --- ANALYTICS PROCESSING (HU-8) ---
+    const filteredAnalyticsData = useMemo(() => {
+        if (analyticsFilter === 'TODO') return allResults;
+        return allResults.filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
+    }, [allResults, analyticsFilter]);
+
+    const passRateData = useMemo(() => {
+        let passed = 0;
+        let failed = 0;
+        filteredAnalyticsData.forEach(res => {
+            if (res.score >= 70) passed++;
+            else failed++;
+        });
+        return [
+            { name: 'Aprobados', value: passed },
+            { name: 'En Revisión', value: failed }
+        ];
+    }, [filteredAnalyticsData]);
+
+    const COLORS = ['#10b981', '#f59e0b']; // Verde, Naranja
+
+    const trendsData = useMemo(() => {
+        const questionsStats = [
+            { name: 'P1', correct: 0, total: 0 },
+            { name: 'P2', correct: 0, total: 0 },
+            { name: 'P3', correct: 0, total: 0 },
+            { name: 'P4', correct: 0, total: 0 },
+            { name: 'P5', correct: 0, total: 0 },
+        ];
+
+        filteredAnalyticsData.forEach(res => {
+            if (res.answers) {
+                let parsedAnswers = [];
+                try {
+                    parsedAnswers = typeof res.answers === 'string' ? JSON.parse(res.answers) : res.answers;
+                } catch (e) {
+                    return;
+                }
+                
+                const refQuestions = res.testType === 'BDD' ? QUESTIONS_BDD : QUESTIONS_TDD;
+                
+                parsedAnswers.forEach((ans, idx) => {
+                    if (idx < 5) {
+                        questionsStats[idx].total++;
+                        if (ans === refQuestions[idx].correct) {
+                            questionsStats[idx].correct++;
+                        }
+                    }
+                });
+            }
+        });
+
+        // Convertir a porcentajes para el gráfico
+        return questionsStats.map(stat => ({
+            name: stat.name,
+            aciertos: stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0,
+            total_intentos: stat.total
+        }));
+    }, [filteredAnalyticsData]);
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
@@ -542,6 +605,61 @@ export default function App() {
                                 </div>
                             </div>
                         </div>
+
+                        {isAdmin && (
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-8">
+                                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 gap-4">
+                                    <h3 className="font-black text-xl text-slate-800 flex items-center gap-2">
+                                        <BarChart3 className="text-indigo-600" /> Tendencias y Desempeño
+                                    </h3>
+                                    <div className="flex bg-slate-200/50 p-1 rounded-2xl">
+                                        {['TODO', 'TDD', 'BDD'].map(f => (
+                                            <button 
+                                                key={f}
+                                                onClick={() => setAnalyticsFilter(f)}
+                                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                            >
+                                                {f === 'TODO' ? 'Todos' : f}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <div className="h-64 flex flex-col items-center">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Tasa de Aprobación</h4>
+                                        <ResponsiveContainer width={250} height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={passRateData}
+                                                    innerRadius={60}
+                                                    outerRadius={80}
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {passRateData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}/>
+                                                <Legend verticalAlign="bottom" height={36} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="h-64 flex flex-col items-center">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Aciertos por Pregunta (%)</h4>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={trendsData} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                                                <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                                <Bar dataKey="aciertos" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} name="% Aciertos" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
