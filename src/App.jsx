@@ -177,7 +177,7 @@ export default function App() {
         }
     }, []);
 
-    // --- FETCH DATA (Realtime) ---
+    // --- FETCH DATA (Realtime y al cambiar de vista) ---
     useEffect(() => {
         if (!user || !supabase || !isLoggedIn) return;
 
@@ -195,13 +195,18 @@ export default function App() {
             }
         };
 
-        fetchInitialData(); // Call the new fetch function
+        // Si la vista actual es el dashboard, bajamos los datos fresquitos
+        if (view === 'dashboard') {
+            fetchInitialData();
+        }
 
         const channel = supabase
             .channel('public:results')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
                 // Actualizado para recargar siempre el Dashboard (vista global)
-                fetchInitialData();
+                if (view === 'dashboard') {
+                    fetchInitialData();
+                }
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
@@ -212,7 +217,7 @@ export default function App() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user, isLoggedIn, studentName]);
+    }, [user, isLoggedIn, studentName, view]);
 
     const handleLogin = () => {
         if (studentName.trim().length < 3) {
