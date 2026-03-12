@@ -53,12 +53,12 @@ const QUESTIONS_TDD = [
     },
     {
         id: 4,
-        question: "En el contexto de pruebas, ¿qué diferencia a un 'Mock' de un 'Stub'?",
+        question: "¿Qué indica una 'Cobertura de Código' (Code Coverage) del 100%?",
         options: [
-            "Los Stubs son para bases de datos únicamente.",
-            "Los Mocks verifican interacciones; los Stubs solo proveen datos.",
-            "No hay diferencia técnica.",
-            "Los Mocks son más lentos que los Stubs."
+            "Que el código no tiene absolutamente ningún bug.",
+            "Que todas las líneas de código han sido ejecutadas al menos una vez por las pruebas.",
+            "Que el rendimiento del software es óptimo.",
+            "Que ya no es necesario realizar pruebas de integración."
         ],
         correct: 1
     },

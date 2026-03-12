@@ -16,11 +16,13 @@ ON CONFLICT (survey_id) DO NOTHING;
 ALTER TABLE public.survey_config ENABLE ROW LEVEL SECURITY;
 
 -- Política: Todos los usuarios pueden leer la configuración
+DROP POLICY IF EXISTS "Permitir lectura a todos" ON public.survey_config;
 CREATE POLICY "Permitir lectura a todos" 
 ON public.survey_config FOR SELECT 
 USING (true);
 
 -- Política: Los usuarios autenticados pueden actualizar (simplificado para admin como en test_config)
+DROP POLICY IF EXISTS "Permitir actualizacion a usuarios autenticados" ON public.survey_config;
 CREATE POLICY "Permitir actualizacion a usuarios autenticados" 
 ON public.survey_config FOR UPDATE 
 USING (auth.role() = 'authenticated');
