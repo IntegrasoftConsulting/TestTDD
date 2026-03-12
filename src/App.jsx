@@ -271,6 +271,18 @@ export default function App() {
             if (isAdmin) fetchSurveyResults();
         }
 
+        const channelResults = supabase
+            .channel('public:results')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
+                if (isLoggedIn && view === 'dashboard') fetchInitialData();
+            }).subscribe();
+            
+        const channelConfig = supabase
+            .channel('public:test_config')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'test_config' }, payload => {
+                fetchConfig(); 
+            }).subscribe();
+
         const channelSurveyConfig = supabase
             .channel('public:survey_config')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_config' }, payload => {

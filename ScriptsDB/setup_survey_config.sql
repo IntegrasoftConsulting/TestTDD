@@ -23,4 +23,4 @@ USING (true);
 -- Política: Los usuarios autenticados pueden actualizar (simplificado para admin como en test_config)
 CREATE POLICY "Permitir actualizacion a usuarios autenticados" 
 ON public.survey_config FOR UPDATE 
-WITH CHECK (auth.role() = 'authenticated');
+USING (auth.role() = 'authenticated');
