@@ -317,7 +317,7 @@ export default function App() {
                     totalQuestions: QUESTIONS.length,
                     testType: testType,
                     uid: user.id,
-                    answers: JSON.stringify(finalAnswers)
+                    answers: finalAnswers
                 }]);
 
                 if (error) throw error;
