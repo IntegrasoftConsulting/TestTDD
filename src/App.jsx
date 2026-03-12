@@ -347,19 +347,28 @@ export default function App() {
     }, [allResults, analyticsFilter]);
 
     const passRateData = useMemo(() => {
-        let passed = 0;
-        let failed = 0;
+        let ranges = {
+            '0-39%': 0,
+            '40-69%': 0,
+            '70-89%': 0,
+            '90-100%': 0
+        };
+
         filteredAnalyticsData.forEach(res => {
-            if (res.score >= 70) passed++;
-            else failed++;
+            const s = res.score;
+            if (s < 40) ranges['0-39%']++;
+            else if (s < 70) ranges['40-69%']++;
+            else if (s < 90) ranges['70-89%']++;
+            else ranges['90-100%']++;
         });
-        return [
-            { name: 'Aprobados', value: passed },
-            { name: 'En Revisión', value: failed }
-        ];
+
+        // Solo retornar los rangos que tienen al menos 1 resultado para no dibujar porciones vacías
+        return Object.keys(ranges)
+            .filter(key => ranges[key] > 0)
+            .map(key => ({ name: key, value: ranges[key] }));
     }, [filteredAnalyticsData]);
 
-    const COLORS = ['#10b981', '#f59e0b']; // Verde, Naranja
+    const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#6366f1']; // Rojo, Naranja, Verde, Índigo (para los 4 rangos)
 
     const trendsData = useMemo(() => {
         const questionsStats = [
@@ -626,7 +635,7 @@ export default function App() {
                                 </div>
                                 <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     <div className="h-64 flex flex-col items-center">
-                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Tasa de Aprobación</h4>
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Distribución de Puntajes</h4>
                                         <ResponsiveContainer width={250} height="100%">
                                             <PieChart>
                                                 <Pie
