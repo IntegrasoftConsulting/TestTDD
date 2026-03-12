@@ -351,6 +351,7 @@ export default function App() {
                 setIsSaving(false);
             }
         }
+    };
     const handleSurveySubmit = async () => {
         if (surveyData.rating_content === 0 || surveyData.rating_instructor === 0 || surveyData.rating_practical === 0) {
             setError("Por favor, califica todos los aspectos antes de enviar.");
