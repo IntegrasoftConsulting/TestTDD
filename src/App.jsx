@@ -133,6 +133,11 @@ const QUESTIONS_BDD = [
     }
 ];
 
+const AVAILABLE_SURVEYS = [
+    { id: 'TDD_SESSION', title: 'Sesión TDD', description: 'Evaluación de la capacitación teórico-práctica de Test Driven Development.' },
+    { id: 'BDD_SESSION', title: 'Sesión BDD', description: 'Evaluación de la capacitación teórico-práctica de Behavior Driven Development.' }
+];
+
 export default function App() {
     const [user, setUser] = useState(null);
     const [view, setView] = useState('login');
@@ -150,7 +155,7 @@ export default function App() {
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
     const [analyticsFilter, setAnalyticsFilter] = useState('TODO'); // Filtro para gráficas (HU-8)
     const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true }); // Estado de configuración de la HU-9
-    const [surveyData, setSurveyData] = useState({ rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
+    const [surveyData, setSurveyData] = useState({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
     const [surveySubmitting, setSurveySubmitting] = useState(false);
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
@@ -363,7 +368,7 @@ export default function App() {
             const { error: surveyError } = await supabase.from('survey_responses').insert([{
                 user_email: email,
                 student_name: studentName,
-                survey_id: 'TDD_SESSION',
+                survey_id: surveyData.survey_id,
                 rating_content: surveyData.rating_content,
                 rating_instructor: surveyData.rating_instructor,
                 rating_practical: surveyData.rating_practical,
@@ -373,7 +378,7 @@ export default function App() {
             if (surveyError) throw surveyError;
             
             // Limpiar y volver al dashboard
-            setSurveyData({ rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
+            setSurveyData({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
             setView('dashboard');
             setError(null);
             alert("¡Gracias por tu feedback! Nos ayuda mucho a mejorar.");
@@ -623,7 +628,10 @@ export default function App() {
                                 Ver Dashboard Global
                                 <BarChart3 className="w-5 h-5" />
                             </button>
-                            <button onClick={() => setView('survey')}
+                            <button onClick={() => {
+                                setSurveyData(prev => ({ ...prev, survey_id: `${testType}_SESSION` }));
+                                setView('survey');
+                            }}
                                 className="bg-amber-50 text-amber-700 px-10 py-4 rounded-2xl font-bold hover:bg-amber-100 transition-all
               flex items-center justify-center gap-2 border-2 border-amber-200"
                             >
@@ -646,6 +654,44 @@ export default function App() {
                     </div>
                 )}
 
+                {view === 'survey_list' && (
+                    <div className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl border border-slate-100 max-w-2xl mx-auto">
+                        <div className="text-center mb-10">
+                            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <Star className="w-8 h-8 fill-current" />
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-800">Encuestas Disponibles</h2>
+                            <p className="text-slate-500 font-medium">Selecciona la sesión que deseas calificar</p>
+                        </div>
+
+                        <div className="grid gap-4">
+                            {AVAILABLE_SURVEYS.map((survey) => (
+                                <button
+                                    key={survey.id}
+                                    onClick={() => {
+                                        setSurveyData(prev => ({ ...prev, survey_id: survey.id }));
+                                        setView('survey');
+                                    }}
+                                    className="p-6 rounded-2xl border-2 border-slate-50 hover:border-amber-400 hover:bg-amber-50 transition-all text-left flex items-center justify-between group"
+                                >
+                                    <div>
+                                        <h3 className="font-black text-slate-800 text-lg">{survey.title}</h3>
+                                        <p className="text-sm text-slate-500 font-medium mt-1">{survey.description}</p>
+                                    </div>
+                                    <ChevronRight className="text-slate-300 group-hover:text-amber-500 transition-colors" />
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setView('dashboard')}
+                            className="w-full mt-8 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                        >
+                            Volver al Dashboard
+                        </button>
+                    </div>
+                )}
+
                 {view === 'survey' && (
                     <div className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl border border-slate-100 max-w-2xl mx-auto">
                         <div className="text-center mb-10">
@@ -653,7 +699,7 @@ export default function App() {
                                 <Star className="w-8 h-8 fill-current" />
                             </div>
                             <h2 className="text-2xl font-black text-slate-800">Encuesta de Satisfacción</h2>
-                            <p className="text-slate-500 font-medium">Ayúdanos a mejorar la sesión teórico-práctica de TDD</p>
+                            <p className="text-slate-500 font-medium">Sesión: {AVAILABLE_SURVEYS.find(s => s.id === surveyData.survey_id)?.title || surveyData.survey_id}</p>
                         </div>
 
                         <div className="space-y-8">
@@ -730,7 +776,7 @@ export default function App() {
                                     <p className="text-3xl font-black text-slate-800">{stats.avg}%</p>
                                 </div>
                             </div>
-                            <div onClick={() => setView('survey')} className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-3xl shadow-sm border border-amber-100 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group">
+                            <div onClick={() => setView('survey_list')} className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-3xl shadow-sm border border-amber-100 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group">
                                 <div className="p-4 bg-white text-amber-500 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
                                     <Star className="w-8 h-8 fill-current" />
                                 </div>
