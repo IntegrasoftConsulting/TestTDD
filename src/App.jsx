@@ -155,6 +155,7 @@ export default function App() {
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
     const [analyticsFilter, setAnalyticsFilter] = useState('TODO'); // Filtro para gráficas (HU-8)
     const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true }); // Estado de configuración de la HU-9
+    const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true }); // Estado de configuración de la HU-11
     const [surveyData, setSurveyData] = useState({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
     const [surveySubmitting, setSurveySubmitting] = useState(false);
 
@@ -210,6 +211,22 @@ export default function App() {
                 console.error("Config fetch error:", err);
             }
         };
+        
+        const fetchSurveyConfig = async () => {
+            try {
+                const { data, error: srvError } = await supabase.from('survey_config').select('*');
+                if (srvError) throw srvError;
+                if (data) {
+                    const newSrvConfig = { TDD_SESSION: true, BDD_SESSION: true };
+                    data.forEach(item => {
+                        newSrvConfig[item.survey_id] = item.is_active;
+                    });
+                    setSurveyConfig(newSrvConfig);
+                }
+            } catch (err) {
+                console.error("Survey config fetch error:", err);
+            }
+        };
 
         const fetchInitialData = async () => {
             if (!isLoggedIn) return;
@@ -232,6 +249,7 @@ export default function App() {
 
         // Bajamos datos fresquitos
         fetchConfig();
+        fetchSurveyConfig();
         if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
         }
@@ -248,9 +266,16 @@ export default function App() {
                 fetchConfig(); 
             }).subscribe();
 
+        const channelSurveyConfig = supabase
+            .channel('public:survey_config')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_config' }, payload => {
+                fetchSurveyConfig(); 
+            }).subscribe();
+
         return () => {
             supabase.removeChannel(channelResults);
             supabase.removeChannel(channelConfig);
+            supabase.removeChannel(channelSurveyConfig);
         };
     }, [user, isLoggedIn, email, isAdmin, view]);
 
@@ -665,7 +690,7 @@ export default function App() {
                         </div>
 
                         <div className="grid gap-4">
-                            {AVAILABLE_SURVEYS.map((survey) => (
+                            {AVAILABLE_SURVEYS.filter(s => surveyConfig[s.id]).map((survey) => (
                                 <button
                                     key={survey.id}
                                     onClick={() => {
@@ -827,6 +852,51 @@ export default function App() {
                                             >
                                                 <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300'}`}></div>
                                                 {testId} {isActive ? 'ON' : 'OFF'}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {isAdmin && (
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
+                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl">
+                                    <MessageSquare className="w-8 h-8" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-black text-xl text-slate-800">Control de Encuestas</h3>
+                                    <p className="text-sm font-medium text-slate-500 mt-1">Habilita o deshabilita la visibilidad de las encuestas para los usuarios.</p>
+                                </div>
+                                <div className="flex gap-4">
+                                    {AVAILABLE_SURVEYS.map(survey => {
+                                        const isActive = surveyConfig[survey.id];
+                                        return (
+                                            <button 
+                                                key={`toggle-srv-${survey.id}`}
+                                                onClick={async () => {
+                                                    const newValue = !isActive;
+                                                    setSurveyConfig(prev => ({...prev, [survey.id]: newValue}));
+                                                    try {
+                                                        const { error: updateError } = await supabase
+                                                            .from('survey_config')
+                                                            .update({ is_active: newValue })
+                                                            .eq('survey_id', survey.id);
+                                                        
+                                                        if (updateError) {
+                                                            setSurveyConfig(prev => ({...prev, [survey.id]: isActive}));
+                                                            setError(`No se pudo actualizar configuración de encuesta: ${updateError.message}`);
+                                                        }
+                                                    } catch (err) {
+                                                        setSurveyConfig(prev => ({...prev, [survey.id]: isActive}));
+                                                        setError("Error de conexión al actualizar encuesta.");
+                                                    }
+                                                }}
+                                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
+                                                    ${isActive ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+                                            >
+                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                                                {survey.title} {isActive ? 'ON' : 'OFF'}
                                             </button>
                                         )
                                     })}

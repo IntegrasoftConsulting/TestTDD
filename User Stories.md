@@ -168,3 +168,28 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que el usuario envía la encuesta
 - **Cuando** la transacción es exitosa
 - **Entonces** los datos deben guardarse en una tabla independiente en Supabase (`survey_responses`) y el administrador debe poder ver un resumen de estos resultados.
+
+---
+
+### HU-11: Gestión de Disponibilidad de Encuestas
+
+**Como** administrador de la plataforma
+**Quiero** poder activar o desactivar encuestas específicas (ej. TDD_SESSION, BDD_SESSION)
+**Para** controlar qué formularios de feedback están disponibles para los usuarios en un momento dado.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Control en el Panel de Administración**
+- **Dado** que un administrador está en su dashboard
+- **Cuando** accede a la sección de control
+- **Entonces** debe ver interruptores (toggles) para habilitar o deshabilitar cada encuesta disponible.
+
+**Criterios de Aceptación 2: Filtrado en la Lista de Encuestas para Usuarios**
+- **Dado** que una encuesta ha sido desactivada por el administrador
+- **Cuando** un usuario accede a la lista de encuestas disponibles
+- **Entonces** la encuesta desactivada no debe aparecer en la lista o debe mostrarse como no disponible.
+
+**Criterios de Aceptación 3: Persistencia en Base de Datos**
+- **Dado** que se cambia el estado de una encuesta
+- **Cuando** se confirma la acción
+- **Entonces** el cambio debe guardarse en la tabla `test_config` (o una tabla similar `survey_config`) para que persista globalmente.
