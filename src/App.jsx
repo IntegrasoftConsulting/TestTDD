@@ -13,7 +13,7 @@ import {
     Loader2
 } from 'lucide-react';
 
-const QUESTIONS = [
+const QUESTIONS_TDD = [
     {
         id: 1,
         question: "¿Cuál es el propósito fundamental del paso 'Red' en el ciclo TDD?",
@@ -71,10 +71,70 @@ const QUESTIONS = [
     }
 ];
 
+const QUESTIONS_BDD = [
+    {
+        id: 1,
+        question: "¿Qué significan las siglas BDD en el desarrollo de software?",
+        options: [
+            "Bug-Driven Development",
+            "Behavior-Driven Development",
+            "Backend-Driven Design",
+            "Basic Data Deployment"
+        ],
+        correct: 1
+    },
+    {
+        id: 2,
+        question: "¿Cuál es el propósito principal del formato Given-When-Then?",
+        options: [
+            "Crear esquemas de bases de datos relacionales.",
+            "Describir el comportamiento de un sistema de forma comprensible para negocio y desarrollo.",
+            "Optimizar la velocidad de ejecución de las pruebas unitarias.",
+            "Definir la arquitectura de microservicios resolviendo dependencias."
+        ],
+        correct: 1
+    },
+    {
+        id: 3,
+        question: "En Gherkin, ¿para qué sirve la palabra clave 'Given' (Dado)?",
+        options: [
+            "Para describir la acción que realiza el usuario.",
+            "Para definir el resultado que se espera tras la acción.",
+            "Para establecer el estado inicial o contexto antes de la acción.",
+            "Para conectar múltiples validaciones en una aserción condicional."
+        ],
+        correct: 2
+    },
+    {
+        id: 4,
+        question: "¿Qué relación existe entre TDD y BDD?",
+        options: [
+            "BDD y TDD son excluyentes; usar uno prohíbe el uso del otro.",
+            "BDD es una evolución del TDD enfocada en el comportamiento y comunicación del sistema.",
+            "TDD es para front-end y BDD es estrictamente para back-end.",
+            "Ninguna, fueron creadas para propósitos completamente separados."
+        ],
+        correct: 1
+    },
+    {
+        id: 5,
+        question: "¿Cuál de estas herramientas es comúnmente utilizada para implementar pruebas BDD?",
+        options: [
+            "Postman",
+            "Sublime Text",
+            "Docker",
+            "Cucumber"
+        ],
+        correct: 3
+    }
+];
+
 export default function App() {
     const [user, setUser] = useState(null);
     const [view, setView] = useState('login');
     const [studentName, setStudentName] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [testType, setTestType] = useState('TDD');
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState([]);
     const [finalScore, setFinalScore] = useState(0);
@@ -82,6 +142,8 @@ export default function App() {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
+
+    const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
     // --- AUTH ---
     useEffect(() => {
@@ -147,8 +209,17 @@ export default function App() {
         };
     }, [user]);
 
-    const handleStartQuiz = () => {
+    const handleLogin = () => {
         if (studentName.trim().length < 3) return;
+        setError(null);
+        setIsLoggedIn(true);
+        setView('dashboard');
+    };
+
+    const handleStartTest = (type) => {
+        setTestType(type);
+        setCurrentQuestion(0);
+        setAnswers([]);
         setError(null);
         setView('quiz');
     };
@@ -181,6 +252,7 @@ export default function App() {
                     score: scorePercentage,
                     correctAnswers: correctCount,
                     totalQuestions: QUESTIONS.length,
+                    testType: testType,
                     uid: user.id
                 }]);
 
@@ -214,26 +286,32 @@ export default function App() {
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8">
             <header className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div onClick={() => setView('login')} className="cursor-pointer">
+                <div onClick={() => isLoggedIn && setView('dashboard')} className={`cursor-pointer ${!isLoggedIn ? 'opacity-90' : 'hover:opacity-80'}`}>
                     <h1 className="text-2xl font-bold text-indigo-700 flex items-center gap-2">
                         <ClipboardCheck className="w-8 h-8" />
-                        TDD Mastery Platform
+                        Test Mastery Platform
                     </h1>
                     <p className="text-slate-500 text-sm">Panel de Evaluación de Ingeniería</p>
                 </div>
-                <nav className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-                    <button onClick={() => setView('login')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${['login', 'quiz',
-                            'result'].includes(view) ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
-                    >
-                        Examen
-                    </button>
-                    <button onClick={() => setView('dashboard')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
-                    >
-                        Dashboard
-                    </button>
-                </nav>
+                {isLoggedIn && (
+                    <nav className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+                        <button onClick={() => setView('dashboard')}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            Dashboard
+                        </button>
+                        <button onClick={() => handleStartTest('TDD')}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'TDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            Test TDD
+                        </button>
+                        <button onClick={() => handleStartTest('BDD')}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'BDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            Test BDD
+                        </button>
+                    </nav>
+                )}
             </header>
 
             <main className="max-w-4xl mx-auto">
@@ -251,17 +329,17 @@ export default function App() {
                             className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
                             <User className="w-8 h-8" />
                         </div>
-                        <h2 className="text-xl font-bold mb-2">Registro de Estudiante</h2>
-                        <p className="text-slate-500 mb-6 text-sm">Ingresa tu nombre tal como aparecerá en el reporte final.</p>
+                        <h2 className="text-xl font-bold mb-2">Ingresar a la Plataforma</h2>
+                        <p className="text-slate-500 mb-6 text-sm">Ingresa tu nombre para acceder a las pruebas y el Dashboard.</p>
                         <input type="text" placeholder="Ej: Juan Pérez"
                             className="w-full p-4 rounded-xl border-2 border-slate-100 mb-4 focus:border-indigo-500 outline-none transition-all text-lg"
                             value={studentName} onChange={(e) => setStudentName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleStartQuiz()}
+                            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                         />
-                        <button onClick={handleStartQuiz} disabled={studentName.trim().length < 3 || isSaving}
+                        <button onClick={handleLogin} disabled={studentName.trim().length < 3 || isSaving}
                             className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
                             {isSaving ?
-                                <Loader2 className="animate-spin w-5 h-5" /> : 'Comenzar Evaluación'}
+                                <Loader2 className="animate-spin w-5 h-5" /> : 'Ingresar'}
                             <ChevronRight className="w-5 h-5" />
                         </button>
                     </div>
@@ -273,12 +351,15 @@ export default function App() {
                             <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">
                                 Pregunta {currentQuestion + 1} / {QUESTIONS.length}
                             </span>
-                            <div className="h-2 w-32 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-600 transition-all duration-500" style={{
-                                    width: `${((currentQuestion +
-                                        1) / QUESTIONS.length) * 100}%`
-                                }}></div>
-                            </div>
+                            <span className="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-widest">
+                                Test: {testType}
+                            </span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-10 mt-[-1rem]">
+                            <div className="h-full bg-indigo-600 transition-all duration-500" style={{
+                                width: `${((currentQuestion +
+                                    1) / QUESTIONS.length) * 100}%`
+                            }}></div>
                         </div>
 
                         <h2 className="text-2xl font-bold mb-10 leading-tight text-slate-800">
@@ -316,7 +397,7 @@ export default function App() {
                             className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
                             <Trophy className="w-12 h-12" />
                         </div>
-                        <h2 className="text-3xl font-black mb-2 text-slate-900">¡Evaluación Finalizada!</h2>
+                        <h2 className="text-3xl font-black mb-2 text-slate-900">¡Test de {testType} Finalizado!</h2>
                         <p className="text-slate-500 mb-10 text-lg font-medium">Buen trabajo, <span
                             className="text-indigo-600">{studentName}</span>. Hemos registrado tu progreso.</p>
 
@@ -337,8 +418,8 @@ export default function App() {
                                 <BarChart3 className="w-5 h-5" />
                             </button>
                             <button onClick={() => {
-                                setCurrentQuestion(0);
-                                setAnswers([]);
+                                setIsLoggedIn(false);
+                                setStudentName('');
                                 setView('login');
                             }}
                                 className="text-slate-500 px-10 py-4 rounded-2xl font-bold hover:bg-slate-100 transition-all"
@@ -392,6 +473,7 @@ export default function App() {
                                     <thead>
                                         <tr className="text-slate-400 text-xs uppercase font-black tracking-widest">
                                             <th className="px-8 py-6">Ingeniero</th>
+                                            <th className="px-8 py-6">Examen</th>
                                             <th className="px-8 py-6">Puntaje</th>
                                             <th className="px-8 py-6">Fecha</th>
                                             <th className="px-8 py-6 text-right">Estatus</th>
@@ -400,7 +482,7 @@ export default function App() {
                                     <tbody className="divide-y divide-slate-100">
                                         {allResults.length === 0 ? (
                                             <tr>
-                                                <td colSpan="4" className="px-8 py-20 text-center">
+                                                <td colSpan="5" className="px-8 py-20 text-center">
                                                     <div className="flex flex-col items-center opacity-30">
                                                         <ClipboardCheck className="w-16 h-16 mb-4" />
                                                         <p className="text-lg font-bold uppercase tracking-tighter">Esperando el primer envío...</p>
@@ -413,6 +495,12 @@ export default function App() {
                                                     <td className="px-8 py-6">
                                                         <div className="font-bold text-slate-800">{res.studentName}</div>
                                                         <div className="text-[10px] text-slate-400 font-mono uppercase">{res.id.substring(0, 8)}</div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border
+                                                    ${res.testType === 'BDD' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                                            {res.testType || 'TDD'}
+                                                        </span>
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <div className="flex items-end gap-1">
@@ -443,7 +531,7 @@ export default function App() {
 
             <footer
                 className="max-w-4xl mx-auto mt-16 pt-8 border-t border-slate-200 flex justify-between items-center text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                <span>TDD AI Course Tools</span>
+                <span>Test Mastery Platform</span>
                 <span>App ID: Supabase-v1</span>
             </footer>
         </div>
