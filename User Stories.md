@@ -65,3 +65,30 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Y** hace clic en el botón de "Iniciar Sesión"
 - **Entonces** el sistema debe evitar el envío del formulario
 - **Y** debe resaltar el campo mostrando un mensaje de error que indique: *"El correo electrónico es un campo obligatorio"*.
+
+---
+
+### HU-7: Perfil de Administrador para Monitoreo de Tests
+
+**Como** coordinador técnico o administrador de la plataforma
+**Quiero** ingresar con una cuenta que tenga privilegios de administrador
+**Para** poder visualizar un panel general (Dashboard) que muestre todos los estudiantes que han respondido a las evaluaciones en la plataforma a lo largo del tiempo.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Acceso exclusivo al panel general (Camino Feliz)**
+- **Dado** que soy un usuario con el rol de `ADMIN` registrado en el sistema
+- **Cuando** inicio sesión utilizando mis credenciales (correo electrónico y contraseña)
+- **Entonces** el sistema me redirige a un Dashboard global
+- **Y** en este Dashboard puedo visualizar una tabla o lista completa de todos los estudiantes, el tipo de test que tomaron, su porcentaje de aciertos y la fecha de la evaluación en tiempo real.
+
+**Criterios de Aceptación 2: Restricción de vista global a estudiantes (Camino Alterno)**
+- **Dado** que un participante estándar inicia sesión en la plataforma
+- **Cuando** navega a la sección de Dashboard
+- **Entonces** debe ver **únicamente** su propio historial de tests realizados
+- **Y** no debe tener acceso ni poder visualizar el histórico o los resultados de otros estudiantes en la base de datos.
+
+**Criterios de Aceptación 3: Métricas globales para el Administrador**
+- **Dado** que el Administrador se encuentra en el Dashboard global
+- **Cuando** visualiza la cabecera del panel
+- **Entonces** debe observar tarjetas con las métricas consolidadas (KPIs) de toda la empresa, como: "Total de Tests Completados", "Promedio General de Calificaciones" y el "Estatus de Sincronización".
