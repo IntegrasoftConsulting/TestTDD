@@ -159,7 +159,7 @@ export default function App() {
                 setUser(data.user);
             } catch (err) {
                 console.error("Auth error:", err);
-                setError("Error de conexión con el servidor de autenticación.");
+                setError(`Error de autenticación: ${err.message || 'Error desconocido'}`);
             } finally {
                 setLoading(false);
             }
