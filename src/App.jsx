@@ -180,10 +180,12 @@ export default function App() {
     useEffect(() => {
         if (!user || !supabase) return;
 
-        const fetchResults = async () => {
+        const fetchInitialData = async () => {
+            if (!user) return;
             const { data, error } = await supabase
                 .from('results')
                 .select('*')
+                .eq('uid', user.id)
                 .order('timestamp', { ascending: false });
 
             if (error) {
@@ -195,17 +197,24 @@ export default function App() {
             }
         };
 
-        fetchResults();
+        fetchInitialData(); // Call the new fetch function
 
-        const resultSubscription = supabase
+        const channel = supabase
             .channel('public:results')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
-                fetchResults();
+                // Only refetch if the change is relevant to the current user's results
+                if (payload.new?.uid === user.id || payload.old?.uid === user.id) {
+                    fetchInitialData();
+                }
             })
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Subscribed to real-time events');
+                }
+            });
 
         return () => {
-            supabase.removeChannel(resultSubscription);
+            supabase.removeChannel(channel);
         };
     }, [user]);
 
@@ -330,7 +339,7 @@ export default function App() {
                             <User className="w-8 h-8" />
                         </div>
                         <h2 className="text-xl font-bold mb-2">Ingresar a la Plataforma</h2>
-                        <p className="text-slate-500 mb-6 text-sm">Ingresa tu nombre para acceder a las pruebas y el Dashboard.</p>
+                        <p className="text-slate-500 mb-6 text-sm">Ingresa tu nombre para acceder a tus pruebas y a tu Dashboard.</p>
                         <input type="text" placeholder="Ej: Juan Pérez"
                             className="w-full p-4 rounded-xl border-2 border-slate-100 mb-4 focus:border-indigo-500 outline-none transition-all text-lg"
                             value={studentName} onChange={(e) => setStudentName(e.target.value)}
