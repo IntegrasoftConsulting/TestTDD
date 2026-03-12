@@ -158,6 +158,8 @@ export default function App() {
     const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true }); // Estado de configuración de la HU-11
     const [surveyData, setSurveyData] = useState({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
     const [surveySubmitting, setSurveySubmitting] = useState(false);
+    const [surveyResults, setSurveyResults] = useState([]); // HU-12: Resultados para analíticas admin
+    const [adminAnalysisTab, setAdminAnalysisTab] = useState('tests'); // HU-12: Tab de analíticas (tests/surveys)
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
@@ -227,6 +229,20 @@ export default function App() {
                 console.error("Survey config fetch error:", err);
             }
         };
+        
+        const fetchSurveyResults = async () => {
+            if (!isAdmin) return;
+            try {
+                const { data, error: srvResError } = await supabase
+                    .from('survey_responses')
+                    .select('*')
+                    .order('timestamp', { ascending: false });
+                if (srvResError) throw srvResError;
+                if (data) setSurveyResults(data);
+            } catch (err) {
+                console.error("Survey results fetch error:", err);
+            }
+        };
 
         const fetchInitialData = async () => {
             if (!isLoggedIn) return;
@@ -252,19 +268,8 @@ export default function App() {
         fetchSurveyConfig();
         if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
+            if (isAdmin) fetchSurveyResults();
         }
-
-        const channelResults = supabase
-            .channel('public:results')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
-                if (isLoggedIn && view === 'dashboard') fetchInitialData();
-            }).subscribe();
-            
-        const channelConfig = supabase
-            .channel('public:test_config')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'test_config' }, payload => {
-                fetchConfig(); 
-            }).subscribe();
 
         const channelSurveyConfig = supabase
             .channel('public:survey_config')
@@ -272,10 +277,17 @@ export default function App() {
                 fetchSurveyConfig(); 
             }).subscribe();
 
+        const channelSurveyResponses = supabase
+            .channel('public:survey_responses')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_responses' }, payload => {
+                if (isAdmin) fetchSurveyResults();
+            }).subscribe();
+
         return () => {
             supabase.removeChannel(channelResults);
             supabase.removeChannel(channelConfig);
             supabase.removeChannel(channelSurveyConfig);
+            supabase.removeChannel(channelSurveyResponses);
         };
     }, [user, isLoggedIn, email, isAdmin, view]);
 
@@ -492,6 +504,33 @@ export default function App() {
             total_intentos: stat.total
         }));
     }, [filteredAnalyticsData]);
+
+    const surveyMetrics = useMemo(() => {
+        if (!isAdmin || surveyResults.length === 0) return null;
+
+        const processSurvey = (id) => {
+            const items = surveyResults.filter(s => s.survey_id === id);
+            if (items.length === 0) return { avg: 0, content: 0, instructor: 0, practical: 0, count: 0 };
+            
+            const sumContent = items.reduce((acc, curr) => acc + curr.rating_content, 0);
+            const sumInstructor = items.reduce((acc, curr) => acc + curr.rating_instructor, 0);
+            const sumPractical = items.reduce((acc, curr) => acc + curr.rating_practical, 0);
+            
+            return {
+                avg: ((sumContent + sumInstructor + sumPractical) / (items.length * 3)).toFixed(1),
+                content: (sumContent / items.length).toFixed(1),
+                instructor: (sumInstructor / items.length).toFixed(1),
+                practical: (sumPractical / items.length).toFixed(1),
+                count: items.length
+            };
+        };
+
+        return {
+            TDD: processSurvey('TDD_SESSION'),
+            BDD: processSurvey('BDD_SESSION'),
+            recentComments: surveyResults.filter(s => s.comments).slice(0, 10)
+        };
+    }, [surveyResults, isAdmin]);
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
@@ -907,53 +946,124 @@ export default function App() {
                         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-8">
                                 <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 gap-4">
                                     <h3 className="font-black text-xl text-slate-800 flex items-center gap-2">
-                                        <BarChart3 className="text-indigo-600" /> Tendencias y Desempeño
+                                        <BarChart3 className="text-indigo-600" /> Analíticas de la Plataforma
                                     </h3>
-                                    <div className="flex bg-slate-200/50 p-1 rounded-2xl">
-                                        {['TODO', 'TDD', 'BDD'].map(f => (
-                                            <button 
-                                                key={f}
-                                                onClick={() => setAnalyticsFilter(f)}
-                                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-500 hover:text-slate-700'}`}
-                                            >
-                                                {f === 'TODO' ? 'Todos' : f}
-                                            </button>
-                                        ))}
+                                    <div className="flex gap-4 items-center">
+                                        {isAdmin && (
+                                            <div className="flex bg-indigo-50 p-1 rounded-2xl border border-indigo-100 mr-4">
+                                                <button 
+                                                    onClick={() => setAdminAnalysisTab('tests')}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'tests' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-600'}`}
+                                                >
+                                                    Evaluaciones
+                                                </button>
+                                                <button 
+                                                    onClick={() => setAdminAnalysisTab('surveys')}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'surveys' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-600'}`}
+                                                >
+                                                    Encuestas
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="flex bg-slate-200/50 p-1 rounded-2xl">
+                                            {['TODO', 'TDD', 'BDD'].map(f => (
+                                                <button 
+                                                    key={f}
+                                                    onClick={() => setAnalyticsFilter(f)}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                                >
+                                                    {f === 'TODO' ? 'Todos' : f}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    <div className="h-64 flex flex-col items-center">
-                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Distribución de Puntajes</h4>
-                                        <ResponsiveContainer width={250} height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={passRateData}
-                                                    innerRadius={60}
-                                                    outerRadius={80}
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                >
-                                                    {passRateData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                    ))}
-                                                </Pie>
-                                                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}/>
-                                                <Legend verticalAlign="bottom" height={36} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <div className="h-64 flex flex-col items-center">
-                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Aciertos por Pregunta (%)</h4>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={trendsData} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                                                <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                                <Bar dataKey="aciertos" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} name="% Aciertos" />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                                <div className="p-8">
+                                    {adminAnalysisTab === 'tests' ? (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                            <div className="h-64 flex flex-col items-center">
+                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Distribución de Puntajes</h4>
+                                                <ResponsiveContainer width={250} height="100%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={passRateData}
+                                                            innerRadius={60}
+                                                            outerRadius={80}
+                                                            paddingAngle={5}
+                                                            dataKey="value"
+                                                        >
+                                                            {passRateData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                            ))}
+                                                        </Pie>
+                                                        <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}/>
+                                                        <Legend verticalAlign="bottom" height={36} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                            <div className="h-64 flex flex-col items-center">
+                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Aciertos por Pregunta (%)</h4>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={trendsData} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                                                        <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                                        <Bar dataKey="aciertos" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} name="% Aciertos" />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {surveyMetrics && [
+                                                    { id: 'TDD', data: surveyMetrics.TDD, color: 'text-blue-600', bg: 'bg-blue-50' },
+                                                    { id: 'BDD', data: surveyMetrics.BDD, color: 'text-purple-600', bg: 'bg-purple-50' }
+                                                ].map(course => (
+                                                    <div key={course.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                        <div className="flex justify-between items-center mb-4">
+                                                            <h4 className="font-black text-slate-800">Sesión {course.id}</h4>
+                                                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${course.bg} ${course.color}`}>
+                                                                {course.data.count} Encuestas
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <div className="text-center">
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase">Contenido</p>
+                                                                <p className="text-xl font-black text-indigo-600">{course.data.count > 0 ? course.data.content : '-'}</p>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase">Instructor</p>
+                                                                <p className="text-xl font-black text-indigo-600">{course.data.count > 0 ? course.data.instructor : '-'}</p>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase">Práctica</p>
+                                                                <p className="text-xl font-black text-indigo-600">{course.data.count > 0 ? course.data.practical : '-'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative">
+                                                <div className="relative z-10">
+                                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Últimos Comentarios</h4>
+                                                    <div className="space-y-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                                        {surveyMetrics?.recentComments.length > 0 ? surveyMetrics.recentComments.map((c, i) => (
+                                                            <div key={i} className="border-l-2 border-indigo-500 pl-4 py-1">
+                                                                <p className="text-sm font-medium italic text-slate-300">"{c.comments}"</p>
+                                                                <p className="text-[10px] font-black text-slate-500 uppercase mt-1">{c.student_name} • {c.survey_id.split('_')[0]}</p>
+                                                            </div>
+                                                        )) : (
+                                                            <p className="text-slate-500 text-sm font-medium italic">No hay comentarios aún...</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <Star className="absolute -bottom-4 -right-4 w-32 h-32 text-white/5 rotate-12" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

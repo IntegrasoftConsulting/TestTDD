@@ -193,3 +193,28 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que se cambia el estado de una encuesta
 - **Cuando** se confirma la acción
 - **Entonces** el cambio debe guardarse en la tabla `test_config` (o una tabla similar `survey_config`) para que persista globalmente.
+
+---
+
+### HU-12: Dashboard de Analíticas de Satisfacción (Admin)
+
+**Como** responsable de formación o administrador
+**Quiero** visualizar gráficos de tendencias y promedios de las encuestas de satisfacción
+**Para** medir la calidad de las capacitaciones (TDD/BDD) e identificar áreas de mejora basadas en el feedback de los ingenieros.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Visualización de Promedios por Categoría**
+- **Dado** que un administrador está en el módulo de analíticas
+- **Cuando** selecciona ver los datos de encuestas
+- **Entonces** debe ver promedios (estrellas) para: Contenido, Instructor y Práctica, agrupados por tipo de sesión (TDD/BDD).
+
+**Criterios de Aceptación 2: Gráfico de Tendencias de Satisfacción**
+- **Dado** que existen múltiples respuestas a lo largo del tiempo
+- **Cuando** se visualiza el dashboard
+- **Entonces** debe mostrarse un gráfico (ej. barras o líneas) que compare la satisfacción general entre las diferentes sesiones.
+
+**Criterios de Aceptación 3: Listado de Comentarios Cualitativos**
+- **Dado** que los usuarios dejan comentarios abiertos
+- **Cuando** el administrador revisa el detalle de una encuesta
+- **Entonces** debe poder leer los comentarios más recientes para obtener feedback detallado.
