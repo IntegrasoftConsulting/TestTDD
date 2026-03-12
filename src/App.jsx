@@ -12,7 +12,9 @@ import {
     AlertCircle,
     RefreshCw,
     Loader2,
-    Power
+    Power,
+    Star,
+    MessageSquare
 } from 'lucide-react';
 
 const QUESTIONS_TDD = [
@@ -148,6 +150,8 @@ export default function App() {
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
     const [analyticsFilter, setAnalyticsFilter] = useState('TODO'); // Filtro para gráficas (HU-8)
     const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true }); // Estado de configuración de la HU-9
+    const [surveyData, setSurveyData] = useState({ rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
+    const [surveySubmitting, setSurveySubmitting] = useState(false);
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
@@ -346,6 +350,37 @@ export default function App() {
             } finally {
                 setIsSaving(false);
             }
+        }
+    const handleSurveySubmit = async () => {
+        if (surveyData.rating_content === 0 || surveyData.rating_instructor === 0 || surveyData.rating_practical === 0) {
+            setError("Por favor, califica todos los aspectos antes de enviar.");
+            return;
+        }
+
+        setSurveySubmitting(true);
+        try {
+            const { error: surveyError } = await supabase.from('survey_responses').insert([{
+                user_email: email,
+                student_name: studentName,
+                survey_id: 'TDD_SESSION',
+                rating_content: surveyData.rating_content,
+                rating_instructor: surveyData.rating_instructor,
+                rating_practical: surveyData.rating_practical,
+                comments: surveyData.comments
+            }]);
+
+            if (surveyError) throw surveyError;
+            
+            // Limpiar y volver al dashboard
+            setSurveyData({ rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
+            setView('dashboard');
+            setError(null);
+            alert("¡Gracias por tu feedback! Nos ayuda mucho a mejorar.");
+        } catch (err) {
+            console.error("Survey error:", err);
+            setError("No se pudo enviar la encuesta. Intenta de nuevo.");
+        } finally {
+            setSurveySubmitting(false);
         }
     };
 
@@ -587,6 +622,13 @@ export default function App() {
                                 Ver Dashboard Global
                                 <BarChart3 className="w-5 h-5" />
                             </button>
+                            <button onClick={() => setView('survey')}
+                                className="bg-amber-50 text-amber-700 px-10 py-4 rounded-2xl font-bold hover:bg-amber-100 transition-all
+              flex items-center justify-center gap-2 border-2 border-amber-200"
+                            >
+                                <MessageSquare className="w-5 h-5" />
+                                Danos tu Opinión
+                            </button>
                             <button onClick={() => {
                                 setIsLoggedIn(false);
                                 setStudentName('');
@@ -599,6 +641,69 @@ export default function App() {
                             >
                                 Cerrar sesión
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {view === 'survey' && (
+                    <div className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl border border-slate-100 max-w-2xl mx-auto">
+                        <div className="text-center mb-10">
+                            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <Star className="w-8 h-8 fill-current" />
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-800">Encuesta de Satisfacción</h2>
+                            <p className="text-slate-500 font-medium">Ayúdanos a mejorar la sesión teórico-práctica de TDD</p>
+                        </div>
+
+                        <div className="space-y-8">
+                            {[
+                                { id: 'rating_content', label: 'Claridad y utilidad del contenido' },
+                                { id: 'rating_instructor', label: 'Dominio y explicación del instructor' },
+                                { id: 'rating_practical', label: 'Calidad de los ejercicios prácticos' }
+                            ].map((field) => (
+                                <div key={field.id} className="space-y-3">
+                                    <label className="block text-sm font-black text-slate-700 uppercase tracking-widest">{field.label}</label>
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                onClick={() => setSurveyData(prev => ({ ...prev, [field.id]: star }))}
+                                                className={`p-2 transition-all ${surveyData[field.id] >= star ? 'text-amber-400 scale-110' : 'text-slate-200 hover:text-amber-200'}`}
+                                            >
+                                                <Star className={`w-8 h-8 ${surveyData[field.id] >= star ? 'fill-current' : ''}`} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+
+                            <div className="space-y-3">
+                                <label className="block text-sm font-black text-slate-700 uppercase tracking-widest" htmlFor="comments">Comentarios adicionales</label>
+                                <textarea
+                                    id="comments"
+                                    rows="3"
+                                    placeholder="¿Qué te pareció la sesión? ¿Qué podríamos mejorar?"
+                                    className="w-full p-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-all"
+                                    value={surveyData.comments}
+                                    onChange={(e) => setSurveyData(prev => ({ ...prev, comments: e.target.value }))}
+                                ></textarea>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button
+                                    onClick={() => setView('dashboard')}
+                                    className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSurveySubmit}
+                                    disabled={surveySubmitting}
+                                    className="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {surveySubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : 'Enviar Comentarios'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -624,13 +729,13 @@ export default function App() {
                                     <p className="text-3xl font-black text-slate-800">{stats.avg}%</p>
                                 </div>
                             </div>
-                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-6">
-                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl">
-                                    <RefreshCw className="w-8 h-8" />
+                            <div onClick={() => setView('survey')} className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-3xl shadow-sm border border-amber-100 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group">
+                                <div className="p-4 bg-white text-amber-500 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
+                                    <Star className="w-8 h-8 fill-current" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Estado</p>
-                                    <p className="text-sm font-bold text-slate-800 uppercase">Sincronizado</p>
+                                    <p className="text-xs text-amber-600 font-black uppercase tracking-widest">Feedback</p>
+                                    <p className="text-sm font-bold text-amber-800">Danos tu opinión</p>
                                 </div>
                             </div>
                         </div>

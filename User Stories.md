@@ -143,3 +143,28 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que el administrador cambia el estado de un test
 - **Cuando** la acción se confirma
 - **Entonces** este nuevo estado debe reflejarse en tiempo real o tras un guardado en la base de datos (Supabase), asegurando que el cambio sea global y afecte la sesión de todos los estudiantes conectados.
+
+---
+
+### HU-10: Encuestas de Satisfacción y Feedback de Sesiones
+
+**Como** organizador de capacitaciones o administrador
+**Quiero** que los ingenieros puedan completar encuestas de satisfacción después de sus sesiones o evaluaciones
+**Para** recopilar feedback cualitativo sobre la calidad de la sesión teórico-práctica y mejorar futuros entrenamientos.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Acceso a la Encuesta desde el Dashboard**
+- **Dado** que un usuario ha iniciado sesión
+- **Cuando** visualiza su panel principal o finaliza un test
+- **Entonces** debe ver una opción clara para "Responder Encuesta de Satisfacción".
+
+**Criterios de Aceptación 2: Formulario de Encuesta TDD**
+- **Dado** que el usuario decide responder la encuesta de la sesión TDD
+- **Cuando** se abre el formulario
+- **Entonces** debe poder calificar aspectos como: Claridad del expositor, Utilidad del contenido, Calidad de los ejercicios prácticos y dejar un comentario abierto.
+
+**Criterios de Aceptación 3: Almacenamiento y Reporte de Resultados**
+- **Dado** que el usuario envía la encuesta
+- **Cuando** la transacción es exitosa
+- **Entonces** los datos deben guardarse en una tabla independiente en Supabase (`survey_responses`) y el administrador debe poder ver un resumen de estos resultados.
