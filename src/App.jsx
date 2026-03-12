@@ -684,13 +684,12 @@ export default function App() {
                                             <th className="px-8 py-6">Examen</th>
                                             <th className="px-8 py-6">Puntaje</th>
                                             <th className="px-8 py-6">Fecha</th>
-                                            <th className="px-8 py-6 text-right">Estatus</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {allResults.length === 0 ? (
                                             <tr>
-                                                <td colSpan="5" className="px-8 py-20 text-center">
+                                                <td colSpan="4" className="px-8 py-20 text-center">
                                                     <div className="flex flex-col items-center opacity-30">
                                                         <ClipboardCheck className="w-16 h-16 mb-4" />
                                                         <p className="text-lg font-bold uppercase tracking-tighter">Esperando el primer envío...</p>
@@ -719,12 +718,6 @@ export default function App() {
                                                     </td>
                                                     <td className="px-8 py-6 text-sm font-medium text-slate-500">
                                                         {res.timestamp ? new Date(res.timestamp).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '---'}
-                                                    </td>
-                                                    <td className="px-8 py-6 text-right">
-                                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest
-                        ${res.score >= 70 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                                            {res.score >= 70 ? 'Passed' : 'Review'}
-                                                        </span>
                                                     </td>
                                                 </tr>
                                             ))
