@@ -483,7 +483,7 @@ export default function App() {
                                     <Users className="w-8 h-8" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Estudiantes</p>
+                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Tests Completados</p>
                                     <p className="text-3xl font-black text-slate-800">{stats.total}</p>
                                 </div>
                             </div>
