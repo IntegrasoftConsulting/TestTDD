@@ -662,8 +662,7 @@ export default function App() {
                             </div>
                         )}
 
-                        {isAdmin && (
-                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-8">
+                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-8">
                                 <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 gap-4">
                                     <h3 className="font-black text-xl text-slate-800 flex items-center gap-2">
                                         <BarChart3 className="text-indigo-600" /> Tendencias y Desempeño
@@ -715,7 +714,6 @@ export default function App() {
                                     </div>
                                 </div>
                             </div>
-                        )}
 
                         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
