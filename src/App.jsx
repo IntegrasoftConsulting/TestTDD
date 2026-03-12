@@ -184,26 +184,31 @@ export default function App() {
 
     // --- FETCH DATA (Realtime y al cambiar de vista) ---
     useEffect(() => {
-        if (!user || !supabase || !isLoggedIn) return;
+        if (!user || !supabase) return;
 
         const fetchConfig = async () => {
-            const { data, error } = await supabase.from('test_config').select('*');
-            if (data && !error) {
-                const newConfig = { TDD: true, BDD: true };
-                data.forEach(item => {
-                    newConfig[item.test_id] = item.is_active;
-                });
-                setTestConfig(newConfig);
+            try {
+                const { data, error: confError } = await supabase.from('test_config').select('*');
+                if (confError) throw confError;
+                if (data) {
+                    const newConfig = { TDD: true, BDD: true };
+                    data.forEach(item => {
+                        newConfig[item.test_id] = item.is_active;
+                    });
+                    setTestConfig(newConfig);
+                }
+            } catch (err) {
+                console.error("Config fetch error:", err);
             }
         };
 
         const fetchInitialData = async () => {
+            if (!isLoggedIn) return;
             // Si el usuario es administrador, traemos todos los resultados.
             // Si no, filtramos por su propio correo
             let query = supabase.from('results').select('*');
             
             if (!isAdmin) {
-                // RLS también nos protegerá aquí si está habilitado en BB.DD.
                 query = query.eq('email', email);
             }
 
@@ -216,22 +221,22 @@ export default function App() {
             }
         };
 
-        // Bajamos datos y config fresquitos
-        if (view === 'dashboard' || view === 'login') {
+        // Bajamos datos fresquitos
+        fetchConfig();
+        if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
-            fetchConfig(); // Cargar la configuración actual cada vez que vamos al dashboard
         }
 
         const channelResults = supabase
             .channel('public:results')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
-                if (view === 'dashboard') fetchInitialData();
+                if (isLoggedIn && view === 'dashboard') fetchInitialData();
             }).subscribe();
             
         const channelConfig = supabase
             .channel('public:test_config')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'test_config' }, payload => {
-                fetchConfig(); // Refrescar config libremente si algo cambia en DB en tiempo real
+                fetchConfig(); 
             }).subscribe();
 
         return () => {
@@ -647,8 +652,23 @@ export default function App() {
                                                 key={`toggle-${testId}`}
                                                 onClick={async () => {
                                                     const newValue = !isActive;
+                                                    // Actualización optimista local
                                                     setTestConfig(prev => ({...prev, [testId]: newValue}));
-                                                    await supabase.from('test_config').update({ is_active: newValue }).eq('test_id', testId);
+                                                    try {
+                                                        const { error: updateError } = await supabase
+                                                            .from('test_config')
+                                                            .update({ is_active: newValue })
+                                                            .eq('test_id', testId);
+                                                        
+                                                        if (updateError) {
+                                                            // Revertir si falla
+                                                            setTestConfig(prev => ({...prev, [testId]: isActive}));
+                                                            setError(`No se pudo actualizar la configuración en DB: ${updateError.message}`);
+                                                        }
+                                                    } catch (err) {
+                                                        setTestConfig(prev => ({...prev, [testId]: isActive}));
+                                                        setError("Error de conexión al actualizar configuración.");
+                                                    }
                                                 }}
                                                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
                                                     ${isActive ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}

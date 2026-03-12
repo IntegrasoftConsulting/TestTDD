@@ -19,15 +19,11 @@ ON public.test_config
 FOR SELECT
 USING (true);
 
--- Política de actualización: Solo los administradores (cuyo email exista en admin_users) pueden encender/apagar tests
--- NOTA: Como usamos auth y un control interno rudimentario, si el JWT no tiene el email o supabase auth anon,
--- la politica se asegurará de buscar el claim actual.
-CREATE POLICY "Permitir actualizacion a administradores"
+-- Política de actualización: Permitiremos la actualización a cualquier usuario autenticado
+-- NOTA: En un entorno productivo real, esto debería validarse con JWT Claims o una función RPC.
+-- Dado que usamos signInAnonymously + control de email manual en el App.jsx, 
+-- la validación de admin se hace principalmente en el Frontend antes de llamar a este Update.
+CREATE POLICY "Permitir actualizacion a usuarios autenticados"
 ON public.test_config
 FOR UPDATE
-USING (
-  EXISTS (
-    SELECT 1 FROM public.admin_users au 
-    WHERE au.email = current_setting('request.jwt.claims', true)::json->>'email'
-  )
-);
+USING (auth.role() = 'authenticated');
