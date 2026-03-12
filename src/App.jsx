@@ -14,7 +14,9 @@ import {
     Loader2,
     Power,
     Star,
-    MessageSquare
+    MessageSquare,
+    Sun,
+    Moon
 } from 'lucide-react';
 
 const QUESTIONS_TDD = [
@@ -160,6 +162,10 @@ export default function App() {
     const [surveySubmitting, setSurveySubmitting] = useState(false);
     const [surveyResults, setSurveyResults] = useState([]); // HU-12: Resultados para analíticas admin
     const [adminAnalysisTab, setAdminAnalysisTab] = useState('tests'); // HU-12: Tab de analíticas (tests/surveys)
+    const [darkMode, setDarkMode] = useState(() => {
+        const saved = localStorage.getItem('mastery_dark_mode');
+        return saved ? JSON.parse(saved) : false;
+    }); // HU-13: Modo Oscuro
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
@@ -193,6 +199,16 @@ export default function App() {
             return () => subscription.unsubscribe();
         }
     }, []);
+
+    // --- DARK MODE SYNC ---
+    useEffect(() => {
+        if (darkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('mastery_dark_mode', JSON.stringify(darkMode));
+    }, [darkMode]);
 
     // --- FETCH DATA (Realtime y al cambiar de vista) ---
     useEffect(() => {
@@ -552,37 +568,59 @@ export default function App() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8">
+        <div className={`min-h-screen transition-colors duration-500 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans p-4 md:p-8`}>
             <header className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div onClick={() => isLoggedIn && setView('dashboard')} className={`cursor-pointer ${!isLoggedIn ? 'opacity-90' : 'hover:opacity-80'}`}>
-                    <h1 className="text-2xl font-bold text-indigo-700 flex items-center gap-2">
-                        <ClipboardCheck className="w-8 h-8" />
-                        Test Mastery Platform
-                        {isAdmin && <span className="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-full uppercase tracking-widest ml-2 align-middle">Admin</span>}
-                    </h1>
-                    <p className="text-slate-500 text-sm">Panel de Evaluación de Ingeniería</p>
+                <div className="flex justify-between items-center w-full md:w-auto">
+                    <div onClick={() => isLoggedIn && setView('dashboard')} className={`cursor-pointer ${!isLoggedIn ? 'opacity-90' : 'hover:opacity-80'}`}>
+                        <h1 className="text-2xl font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
+                            <ClipboardCheck className="w-8 h-8" />
+                            Test Mastery Platform
+                            {isAdmin && <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-1 rounded-full uppercase tracking-widest ml-2 align-middle">Admin</span>}
+                        </h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">Panel de Evaluación de Ingeniería</p>
+                    </div>
+                    
+                    {/* Botón de Modo Oscuro (Móvil) */}
+                    <button 
+                        onClick={() => setDarkMode(!darkMode)}
+                        className="p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-amber-400 md:hidden"
+                    >
+                        {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </button>
                 </div>
-                {isLoggedIn && (
-                    <nav className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-                        <button onClick={() => setView('dashboard')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            Dashboard
-                        </button>
-                        <button onClick={() => handleStartTest('TDD')}
-                            disabled={!isAdmin && !testConfig['TDD']}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'TDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
-                        >
-                            {(!isAdmin && !testConfig['TDD']) ? 'TDD (Cerrado)' : 'Test TDD'}
-                        </button>
-                        <button onClick={() => handleStartTest('BDD')}
-                            disabled={!isAdmin && !testConfig['BDD']}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'BDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
-                        >
-                            {(!isAdmin && !testConfig['BDD']) ? 'BDD (Cerrado)' : 'Test BDD'}
-                        </button>
-                    </nav>
-                )}
+                
+                <div className="flex items-center gap-4">
+                    {/* Botón de Modo Oscuro (Escritorio) */}
+                    <button 
+                        onClick={() => setDarkMode(!darkMode)}
+                        className="hidden md:flex p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-amber-400 hover:scale-110 transition-transform"
+                        title={darkMode ? "Modo Claro" : "Modo Oscuro"}
+                    >
+                        {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </button>
+
+                    {isLoggedIn && (
+                        <nav className="flex bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                            <button onClick={() => setView('dashboard')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                            >
+                                Dashboard
+                            </button>
+                            <button onClick={() => handleStartTest('TDD')}
+                                disabled={!isAdmin && !testConfig['TDD']}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'TDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:text-slate-400`}
+                            >
+                                {(!isAdmin && !testConfig['TDD']) ? 'TDD (Cerrado)' : 'Test TDD'}
+                            </button>
+                            <button onClick={() => handleStartTest('BDD')}
+                                disabled={!isAdmin && !testConfig['BDD']}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'BDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:text-slate-400`}
+                            >
+                                {(!isAdmin && !testConfig['BDD']) ? 'BDD (Cerrado)' : 'Test BDD'}
+                            </button>
+                        </nav>
+                    )}
+                </div>
             </header>
 
             <main className="max-w-4xl mx-auto">
@@ -595,28 +633,28 @@ export default function App() {
                 )}
 
                 {view === 'login' && (
-                    <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 max-w-md mx-auto text-center">
+                    <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 max-w-md mx-auto text-center">
                         <div
-                            className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                            className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6">
                             <User className="w-8 h-8" />
                         </div>
                         <h2 className="text-xl font-bold mb-2">Ingresar a la Plataforma</h2>
-                        <p className="text-slate-500 mb-6 text-sm">Completa tus datos para acceder a tus pruebas y a tu Dashboard.</p>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">Completa tus datos para acceder a tus pruebas y a tu Dashboard.</p>
                         
                         <div className="space-y-4 mb-6 text-left">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1 ml-1" htmlFor="studentName">Nombre completo</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1" htmlFor="studentName">Nombre completo</label>
                                 <input id="studentName" type="text" placeholder="Ej: Juan Pérez"
-                                    className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-all text-md"
+                                    className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 focus:border-indigo-500 outline-none transition-all text-md dark:text-slate-100"
                                     value={studentName} onChange={(e) => { setStudentName(e.target.value); setError(null); }}
                                     onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                                 />
                             </div>
                             
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1 ml-1" htmlFor="email">Correo electrónico</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1" htmlFor="email">Correo electrónico</label>
                                 <input id="email" type="email" placeholder="Ej: jperez@empresa.com"
-                                    className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-all text-md"
+                                    className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 focus:border-indigo-500 outline-none transition-all text-md dark:text-slate-100"
                                     value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }}
                                     onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                                 />
@@ -633,38 +671,38 @@ export default function App() {
                 )}
 
                 {view === 'quiz' && (
-                    <div className="bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100">
+                    <div className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800">
                         <div className="flex justify-between items-center mb-8">
-                            <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">
+                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
                                 Pregunta {currentQuestion + 1} / {QUESTIONS.length}
                             </span>
-                            <span className="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-widest">
+                            <span className="text-xs font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-widest">
                                 Test: {testType}
                             </span>
                         </div>
-                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-10 mt-[-1rem]">
+                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-10 mt-[-1rem]">
                             <div className="h-full bg-indigo-600 transition-all duration-500" style={{
                                 width: `${((currentQuestion +
                                     1) / QUESTIONS.length) * 100}%`
                             }}></div>
                         </div>
 
-                        <h2 className="text-2xl font-bold mb-10 leading-tight text-slate-800">
+                        <h2 className="text-2xl font-bold mb-10 leading-tight text-slate-800 dark:text-slate-100">
                             {QUESTIONS[currentQuestion].question}
                         </h2>
 
                         <div className="space-y-4">
                             {QUESTIONS[currentQuestion].options.map((option, idx) => (
                                 <button key={idx} disabled={isSaving} onClick={() => handleAnswer(idx)}
-                                    className="w-full text-left p-5 rounded-2xl border-2 border-slate-50 hover:border-indigo-400
-              hover:bg-indigo-50 transition-all group flex items-start gap-4 disabled:opacity-50"
+                                    className="w-full text-left p-5 rounded-2xl border-2 border-slate-50 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500
+              hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group flex items-start gap-4 disabled:opacity-50"
                                 >
                                     <span
-                                        className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center font-black group-hover:bg-indigo-600 group-hover:text-white shrink-0 transition-colors">
+                                        className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-black group-hover:bg-indigo-600 group-hover:text-white shrink-0 transition-colors">
                                         {String.fromCharCode(65 + idx)}
                                     </span>
                                     <span
-                                        className="text-lg font-medium text-slate-700 group-hover:text-indigo-900 pt-1 leading-snug">{option}</span>
+                                        className="text-lg font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-900 dark:group-hover:text-indigo-100 pt-1 leading-snug">{option}</span>
                                 </button>
                             ))}
                         </div>
@@ -834,43 +872,43 @@ export default function App() {
                 {view === 'dashboard' && (
                     <div className="space-y-8 animate-in fade-in duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-6">
-                                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl">
+                            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-6">
+                                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl">
                                     <Users className="w-8 h-8" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Tests Completados</p>
-                                    <p className="text-3xl font-black text-slate-800">{stats.total}</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Tests Completados</p>
+                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.total}</p>
                                 </div>
                             </div>
-                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-6">
-                                <div className="p-4 bg-green-50 text-green-600 rounded-2xl">
+                            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-6">
+                                <div className="p-4 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl">
                                     <Trophy className="w-8 h-8" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Promedio</p>
-                                    <p className="text-3xl font-black text-slate-800">{stats.avg}%</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Promedio</p>
+                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{stats.avg}%</p>
                                 </div>
                             </div>
-                            <div onClick={() => setView('survey_list')} className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-3xl shadow-sm border border-amber-100 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group">
-                                <div className="p-4 bg-white text-amber-500 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
+                            <div onClick={() => setView('survey_list')} className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-8 rounded-3xl shadow-sm border border-amber-100 dark:border-amber-900/30 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group">
+                                <div className="p-4 bg-white dark:bg-slate-900 text-amber-500 dark:text-amber-400 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
                                     <Star className="w-8 h-8 fill-current" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-amber-600 font-black uppercase tracking-widest">Feedback</p>
-                                    <p className="text-sm font-bold text-amber-800">Danos tu opinión</p>
+                                    <p className="text-xs text-amber-600 dark:text-amber-500 font-black uppercase tracking-widest">Feedback</p>
+                                    <p className="text-sm font-bold text-amber-800 dark:text-amber-200">Danos tu opinión</p>
                                 </div>
                             </div>
                         </div>
 
                         {isAdmin && (
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
-                                <div className="p-4 bg-slate-50 text-slate-600 rounded-2xl">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
+                                <div className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl">
                                     <Power className="w-8 h-8" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-black text-xl text-slate-800">Control de Evaluaciones</h3>
-                                    <p className="text-sm font-medium text-slate-500 mt-1">Habilita o deshabilita los tests para todos los estudiantes.</p>
+                                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">Control de Evaluaciones</h3>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Habilita o deshabilita los tests para todos los estudiantes.</p>
                                 </div>
                                 <div className="flex gap-4">
                                     {['TDD', 'BDD'].map(testId => {
@@ -899,9 +937,9 @@ export default function App() {
                                                     }
                                                 }}
                                                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
-                                                    ${isActive ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+                                                    ${isActive ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400 hover:bg-green-100' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100'}`}
                                             >
-                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
                                                 {testId} {isActive ? 'ON' : 'OFF'}
                                             </button>
                                         )
@@ -911,13 +949,13 @@ export default function App() {
                         )}
 
                         {isAdmin && (
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
-                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 rounded-2xl">
                                     <MessageSquare className="w-8 h-8" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-black text-xl text-slate-800">Control de Encuestas</h3>
-                                    <p className="text-sm font-medium text-slate-500 mt-1">Habilita o deshabilita la visibilidad de las encuestas para los usuarios.</p>
+                                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">Control de Encuestas</h3>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Habilita o deshabilita la visibilidad de las encuestas para los usuarios.</p>
                                 </div>
                                 <div className="flex gap-4">
                                     {AVAILABLE_SURVEYS.map(survey => {
@@ -944,9 +982,9 @@ export default function App() {
                                                     }
                                                 }}
                                                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
-                                                    ${isActive ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+                                                    ${isActive ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400 hover:bg-green-100' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100'}`}
                                             >
-                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
                                                 {survey.title} {isActive ? 'ON' : 'OFF'}
                                             </button>
                                         )
@@ -955,34 +993,34 @@ export default function App() {
                             </div>
                         )}
 
-                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-8">
-                                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 gap-4">
-                                    <h3 className="font-black text-xl text-slate-800 flex items-center gap-2">
-                                        <BarChart3 className="text-indigo-600" /> Analíticas de la Plataforma
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
+                                <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 dark:bg-slate-800/30 gap-4">
+                                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                        <BarChart3 className="text-indigo-600 dark:text-indigo-400" /> Analíticas de la Plataforma
                                     </h3>
-                                    <div className="flex gap-4 items-center">
+                                    <div className="flex gap-4 items-center flex-wrap">
                                         {isAdmin && (
-                                            <div className="flex bg-indigo-50 p-1 rounded-2xl border border-indigo-100 mr-4">
+                                            <div className="flex bg-indigo-50 dark:bg-indigo-900/20 p-1 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mr-4">
                                                 <button 
                                                     onClick={() => setAdminAnalysisTab('tests')}
-                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'tests' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-600'}`}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'tests' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 dark:text-indigo-500 hover:text-indigo-600'}`}
                                                 >
                                                     Evaluaciones
                                                 </button>
                                                 <button 
                                                     onClick={() => setAdminAnalysisTab('surveys')}
-                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'surveys' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-600'}`}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'surveys' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 dark:text-indigo-500 hover:text-indigo-600'}`}
                                                 >
                                                     Encuestas
                                                 </button>
                                             </div>
                                         )}
-                                        <div className="flex bg-slate-200/50 p-1 rounded-2xl">
+                                        <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
                                             {['TODO', 'TDD', 'BDD'].map(f => (
                                                 <button 
                                                     key={f}
                                                     onClick={() => setAnalyticsFilter(f)}
-                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                                                 >
                                                     {f === 'TODO' ? 'Todos' : f}
                                                 </button>
@@ -1017,10 +1055,10 @@ export default function App() {
                                                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Aciertos por Pregunta (%)</h4>
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <BarChart data={trendsData} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
-                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                                                        <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? "#334155" : "#f1f5f9"} />
+                                                        <XAxis dataKey="name" stroke={darkMode ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} />
+                                                        <YAxis stroke={darkMode ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                                                        <RechartsTooltip cursor={{ fill: darkMode ? '#1e293b' : '#f8fafc' }} contentStyle={{ backgroundColor: darkMode ? '#0f172a' : '#ffffff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: darkMode ? '#f1f5f9' : '#1e293b' }} />
                                                         <Bar dataKey="aciertos" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} name="% Aciertos" />
                                                     </BarChart>
                                                 </ResponsiveContainer>
@@ -1030,35 +1068,35 @@ export default function App() {
                                         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {surveyMetrics && [
-                                                    { id: 'TDD', data: surveyMetrics.TDD, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                                    { id: 'BDD', data: surveyMetrics.BDD, color: 'text-purple-600', bg: 'bg-purple-50' }
+                                                    { id: 'TDD', data: surveyMetrics.TDD, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                                    { id: 'BDD', data: surveyMetrics.BDD, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' }
                                                 ].map(course => (
-                                                    <div key={course.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                    <div key={course.id} className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
                                                         <div className="flex justify-between items-center mb-4">
-                                                            <h4 className="font-black text-slate-800">Sesión {course.id}</h4>
+                                                            <h4 className="font-black text-slate-800 dark:text-slate-100">Sesión {course.id}</h4>
                                                             <div className={`px-3 py-1 rounded-full text-xs font-bold ${course.bg} ${course.color}`}>
                                                                 {course.data.count} Encuestas
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="text-center">
-                                                                <p className="text-[10px] font-black text-slate-400 uppercase">Contenido</p>
-                                                                <p className="text-xl font-black text-indigo-600">{course.data.count > 0 ? course.data.content : '-'}</p>
+                                                                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Contenido</p>
+                                                                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{course.data.count > 0 ? course.data.content : '-'}</p>
                                                             </div>
                                                             <div className="text-center">
-                                                                <p className="text-[10px] font-black text-slate-400 uppercase">Instructor</p>
-                                                                <p className="text-xl font-black text-indigo-600">{course.data.count > 0 ? course.data.instructor : '-'}</p>
+                                                                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Instructor</p>
+                                                                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{course.data.count > 0 ? course.data.instructor : '-'}</p>
                                                             </div>
                                                             <div className="text-center">
-                                                                <p className="text-[10px] font-black text-slate-400 uppercase">Práctica</p>
-                                                                <p className="text-xl font-black text-indigo-600">{course.data.count > 0 ? course.data.practical : '-'}</p>
+                                                                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Práctica</p>
+                                                                <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{course.data.count > 0 ? course.data.practical : '-'}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
 
-                                            <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative">
+                                            <div className="bg-slate-900 dark:bg-black rounded-2xl p-6 text-white overflow-hidden relative border border-slate-800 dark:border-slate-900">
                                                 <div className="relative z-10">
                                                     <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Últimos Comentarios</h4>
                                                     <div className="space-y-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
@@ -1079,23 +1117,23 @@ export default function App() {
                                 </div>
                             </div>
 
-                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <h3 className="font-black text-xl text-slate-800 flex items-center gap-2">
-                                    <BarChart3 className="text-indigo-600" /> Historial de Resultados
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                                <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <BarChart3 className="text-indigo-600 dark:text-indigo-400" /> Historial de Resultados
                                 </h3>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
-                                        <tr className="text-slate-400 text-xs uppercase font-black tracking-widest">
+                                        <tr className="text-slate-400 dark:text-slate-500 text-xs uppercase font-black tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
                                             <th className="px-8 py-6">Ingeniero</th>
                                             <th className="px-8 py-6">Examen</th>
                                             <th className="px-8 py-6">Puntaje</th>
                                             <th className="px-8 py-6">Fecha</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                         {allResults.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="px-8 py-20 text-center">
@@ -1107,25 +1145,25 @@ export default function App() {
                                             </tr>
                                         ) : (
                                             allResults.map((res) => (
-                                                <tr key={res.id} className="hover:bg-slate-50/80 transition-colors">
+                                                <tr key={res.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                                                     <td className="px-8 py-6">
-                                                        <div className="font-bold text-slate-800">{res.studentName}</div>
-                                                        <div className="text-[10px] text-slate-400 font-mono uppercase">{res.id.substring(0, 8)}</div>
+                                                        <div className="font-bold text-slate-800 dark:text-slate-200">{res.studentName}</div>
+                                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase">{res.id.substring(0, 8)}</div>
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border
-                                                    ${res.testType === 'BDD' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                                    ${res.testType === 'BDD' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50'}`}>
                                                             {res.testType || 'TDD'}
                                                         </span>
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <div className="flex items-end gap-1">
-                                                            <span className="text-2xl font-black text-slate-800">{Math.round(res.score)}%</span>
+                                                            <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{Math.round(res.score)}%</span>
                                                             <span
-                                                                className="text-xs text-slate-400 mb-1 font-bold">({res.correctAnswers}/{res.totalQuestions})</span>
+                                                                className="text-xs text-slate-400 dark:text-slate-500 mb-1 font-bold">({res.correctAnswers}/{res.totalQuestions})</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-6 text-sm font-medium text-slate-500">
+                                                    <td className="px-8 py-6 text-sm font-medium text-slate-500 dark:text-slate-400">
                                                         {res.timestamp ? new Date(res.timestamp).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '---'}
                                                     </td>
                                                 </tr>
@@ -1140,7 +1178,7 @@ export default function App() {
             </main>
 
             <footer
-                className="max-w-4xl mx-auto mt-16 pt-8 border-t border-slate-200 flex justify-between items-center text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                className="max-w-4xl mx-auto mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-slate-400 dark:text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">
                 <span>Test Mastery Platform</span>
                 <span>App ID: Supabase-v1</span>
             </footer>

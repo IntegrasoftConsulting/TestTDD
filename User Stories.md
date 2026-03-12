@@ -218,3 +218,27 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que los usuarios dejan comentarios abiertos
 - **Cuando** el administrador revisa el detalle de una encuesta
 - **Entonces** debe poder leer los comentarios más recientes para obtener feedback detallado.
+---
+
+### HU-13: Modo Oscuro (Dark Mode)
+
+**Como** usuario de la plataforma
+**Quiero** poder alternar entre un tema claro y un tema oscuro
+**Para** reducir la fatiga visual y personalizar mi experiencia de uso según mis preferencias y el entorno de iluminación.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Botón de alternancia de tema**
+- **Dado** que un usuario está navegado en cualquier sección de la aplicación
+- **Cuando** hace clic en el ícono de alternancia de tema (Sol/Luna) en la cabecera
+- **Entonces** la interfaz debe cambiar instantáneamente entre el esquema de colores claro y oscuro.
+
+**Criterios de Aceptación 2: Persistencia de la preferencia**
+- **Dado** que un usuario ha seleccionado el modo oscuro (o claro)
+- **Cuando** cierra la pestaña o recarga la página
+- **Entonces** el sistema debe recordar la última elección realizada y aplicarla automáticamente al cargar.
+
+**Criterios de Aceptación 3: Adaptación visual de analíticas y dashboards**
+- **Dado** que el sistema está en modo oscuro
+- **Cuando** el administrador visualiza las gráficas de Recharts y las tablas de resultados
+- **Entonces** los colores de fondo, ejes de gráficas y bordes deben ajustarse para mantener la legibilidad y estética premium.
