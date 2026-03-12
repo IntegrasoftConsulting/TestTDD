@@ -11,7 +11,8 @@ import {
     User,
     AlertCircle,
     RefreshCw,
-    Loader2
+    Loader2,
+    Power
 } from 'lucide-react';
 
 const QUESTIONS_TDD = [
@@ -146,6 +147,7 @@ export default function App() {
     const [error, setError] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
     const [analyticsFilter, setAnalyticsFilter] = useState('TODO'); // Filtro para gráficas (HU-8)
+    const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true }); // Estado de configuración de la HU-9
 
     const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
 
@@ -184,6 +186,17 @@ export default function App() {
     useEffect(() => {
         if (!user || !supabase || !isLoggedIn) return;
 
+        const fetchConfig = async () => {
+            const { data, error } = await supabase.from('test_config').select('*');
+            if (data && !error) {
+                const newConfig = { TDD: true, BDD: true };
+                data.forEach(item => {
+                    newConfig[item.test_id] = item.is_active;
+                });
+                setTestConfig(newConfig);
+            }
+        };
+
         const fetchInitialData = async () => {
             // Si el usuario es administrador, traemos todos los resultados.
             // Si no, filtramos por su propio correo
@@ -203,27 +216,27 @@ export default function App() {
             }
         };
 
-        // Si la vista actual es el dashboard, bajamos los datos fresquitos
-        if (view === 'dashboard') {
+        // Bajamos datos y config fresquitos
+        if (view === 'dashboard' || view === 'login') {
             fetchInitialData();
+            fetchConfig(); // Cargar la configuración actual cada vez que vamos al dashboard
         }
 
-        const channel = supabase
+        const channelResults = supabase
             .channel('public:results')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
-                // Actualizado para recargar siempre el Dashboard (vista global)
-                if (view === 'dashboard') {
-                    fetchInitialData();
-                }
-            })
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('Subscribed to real-time events');
-                }
-            });
+                if (view === 'dashboard') fetchInitialData();
+            }).subscribe();
+            
+        const channelConfig = supabase
+            .channel('public:test_config')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'test_config' }, payload => {
+                fetchConfig(); // Refrescar config libremente si algo cambia en DB en tiempo real
+            }).subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(channelResults);
+            supabase.removeChannel(channelConfig);
         };
     }, [user, isLoggedIn, email, isAdmin, view]);
 
@@ -435,14 +448,16 @@ export default function App() {
                             Dashboard
                         </button>
                         <button onClick={() => handleStartTest('TDD')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'TDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                            disabled={!isAdmin && !testConfig['TDD']}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'TDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
                         >
-                            Test TDD
+                            {(!isAdmin && !testConfig['TDD']) ? 'TDD (Cerrado)' : 'Test TDD'}
                         </button>
                         <button onClick={() => handleStartTest('BDD')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'BDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                            disabled={!isAdmin && !testConfig['BDD']}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'BDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
                         >
-                            Test BDD
+                            {(!isAdmin && !testConfig['BDD']) ? 'BDD (Cerrado)' : 'Test BDD'}
                         </button>
                     </nav>
                 )}
@@ -614,6 +629,38 @@ export default function App() {
                                 </div>
                             </div>
                         </div>
+
+                        {isAdmin && (
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
+                                <div className="p-4 bg-slate-50 text-slate-600 rounded-2xl">
+                                    <Power className="w-8 h-8" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-black text-xl text-slate-800">Control de Evaluaciones</h3>
+                                    <p className="text-sm font-medium text-slate-500 mt-1">Habilita o deshabilita los tests para todos los estudiantes.</p>
+                                </div>
+                                <div className="flex gap-4">
+                                    {['TDD', 'BDD'].map(testId => {
+                                        const isActive = testConfig[testId];
+                                        return (
+                                            <button 
+                                                key={`toggle-${testId}`}
+                                                onClick={async () => {
+                                                    const newValue = !isActive;
+                                                    setTestConfig(prev => ({...prev, [testId]: newValue}));
+                                                    await supabase.from('test_config').update({ is_active: newValue }).eq('test_id', testId);
+                                                }}
+                                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
+                                                    ${isActive ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+                                            >
+                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                                                {testId} {isActive ? 'ON' : 'OFF'}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         {isAdmin && (
                             <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-8">
