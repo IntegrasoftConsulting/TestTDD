@@ -133,6 +133,7 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [view, setView] = useState('login');
     const [studentName, setStudentName] = useState('');
+    const [email, setEmail] = useState(''); // Estado para el nuevo campo de correo
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [testType, setTestType] = useState('TDD');
     const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -184,7 +185,7 @@ export default function App() {
             const { data, error } = await supabase
                 .from('results')
                 .select('*')
-                .eq('studentName', studentName)
+                // .eq('studentName', studentName) // Dejamos de filtrar por nombre estrictamente para ver el dashboard global o filtramos por UID más adelante
                 .order('timestamp', { ascending: false });
 
             if (error) {
@@ -199,10 +200,8 @@ export default function App() {
         const channel = supabase
             .channel('public:results')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
-                // Only refetch if the change is relevant to the current user's results
-                if (payload.new?.studentName === studentName || payload.old?.studentName === studentName || payload.new?.uid === user.id) {
-                    fetchInitialData();
-                }
+                // Actualizado para recargar siempre el Dashboard (vista global)
+                fetchInitialData();
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
@@ -216,7 +215,23 @@ export default function App() {
     }, [user, isLoggedIn, studentName]);
 
     const handleLogin = () => {
-        if (studentName.trim().length < 3) return;
+        if (studentName.trim().length < 3) {
+            setError("Por favor, ingresa tu nombre completo (mínimo 3 caracteres).");
+            return;
+        }
+
+        if (!email.trim()) {
+            setError("El correo electrónico es un campo obligatorio");
+            return;
+        }
+
+        // Expresión regular para validar formato de correo electrónico
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError("Por favor, ingresa un formato de correo electrónico válido (ej. nombre@dominio.com)");
+            return;
+        }
+
         setError(null);
         setIsLoggedIn(true);
         setView('dashboard');
@@ -255,6 +270,7 @@ export default function App() {
             try {
                 const { error } = await supabase.from('results').insert([{
                     studentName,
+                    email, // Guardamos también el correo en la base de datos (asegúrate de que la columna exista o usar metadata si es necesario)
                     score: scorePercentage,
                     correctAnswers: correctCount,
                     totalQuestions: QUESTIONS.length,
@@ -336,16 +352,32 @@ export default function App() {
                             <User className="w-8 h-8" />
                         </div>
                         <h2 className="text-xl font-bold mb-2">Ingresar a la Plataforma</h2>
-                        <p className="text-slate-500 mb-6 text-sm">Ingresa tu nombre para acceder a tus pruebas y a tu Dashboard.</p>
-                        <input type="text" placeholder="Ej: Juan Pérez"
-                            className="w-full p-4 rounded-xl border-2 border-slate-100 mb-4 focus:border-indigo-500 outline-none transition-all text-lg"
-                            value={studentName} onChange={(e) => setStudentName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                        />
-                        <button onClick={handleLogin} disabled={studentName.trim().length < 3 || isSaving}
+                        <p className="text-slate-500 mb-6 text-sm">Completa tus datos para acceder a tus pruebas y a tu Dashboard.</p>
+                        
+                        <div className="space-y-4 mb-6 text-left">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1 ml-1" htmlFor="studentName">Nombre completo</label>
+                                <input id="studentName" type="text" placeholder="Ej: Juan Pérez"
+                                    className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-all text-md"
+                                    value={studentName} onChange={(e) => { setStudentName(e.target.value); setError(null); }}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1 ml-1" htmlFor="email">Correo electrónico</label>
+                                <input id="email" type="email" placeholder="Ej: jperez@empresa.com"
+                                    className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-indigo-500 outline-none transition-all text-md"
+                                    value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                                />
+                            </div>
+                        </div>
+
+                        <button onClick={handleLogin} disabled={isSaving}
                             className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
                             {isSaving ?
-                                <Loader2 className="animate-spin w-5 h-5" /> : 'Ingresar'}
+                                <Loader2 className="animate-spin w-5 h-5" /> : 'Iniciar Sesión'}
                             <ChevronRight className="w-5 h-5" />
                         </button>
                     </div>
@@ -426,6 +458,7 @@ export default function App() {
                             <button onClick={() => {
                                 setIsLoggedIn(false);
                                 setStudentName('');
+                                setEmail(''); // Limpiamos el correo al cerrar sesión
                                 setAllResults([]);
                                 setView('login');
                             }}
