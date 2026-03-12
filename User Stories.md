@@ -118,3 +118,28 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que un usuario con rol estándar (estudiante) inicia sesión
 - **Cuando** accede a su Dashboard personal
 - **Entonces** el sistema no debe mostrarle estas analíticas globales de la empresa, limitando su vista a sus métricas individuales o tarjetas básicas.
+
+---
+
+### HU-9: Gestión de Disponibilidad de Evaluaciones (Habilitar/Deshabilitar Tests)
+
+**Como** administrador o coordinador de evaluaciones
+**Quiero** poder habilitar o deshabilitar pruebas específicas (ej. Test TDD, Test BDD) desde mi panel
+**Para** controlar en qué momentos los desarrolladores y usuarios pueden presentar ciertas evaluaciones, cerrando el acceso cuando no estén en un periodo válido.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Interfaz de Gestión en el Dashboard Admin**
+- **Dado** que un usuario administrador se encuentra en su panel
+- **Cuando** visualiza las opciones del Dashboard
+- **Entonces** debe existir una sección o panel de control donde pueda ver el estado actual de cada evaluación (Activa/Inactiva) y un botón o *switch* para alternar dicho estado.
+
+**Criterios de Aceptación 2: Ocultamiento/Bloqueo para los Estudiantes**
+- **Dado** que un test (ej. BDD) ha sido marcado como "Inactivo" por el admin
+- **Cuando** un usuario estándar (estudiante) inicia sesión en la plataforma
+- **Entonces** la tarjeta o botón para iniciar dicho test debe aparecer deshabilitado o directamente oculto en su vista principal.
+
+**Criterios de Aceptación 3: Persistencia del Estado**
+- **Dado** que el administrador cambia el estado de un test
+- **Cuando** la acción se confirma
+- **Entonces** este nuevo estado debe reflejarse en tiempo real o tras un guardado en la base de datos (Supabase), asegurando que el cambio sea global y afecte la sesión de todos los estudiantes conectados.
