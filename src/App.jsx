@@ -316,21 +316,25 @@ export default function App() {
                     try {
                         const { data: qData, error: qErr } = await supabase
                             .from('questions')
-                            .select('test_type, order_index, correct_option_index')
+                            .select('test_type, order_index, correct_option_index, question_text, options')
                             .eq('is_active', true)
                             .order('order_index', { ascending: true });
                         if (!qErr && qData) {
-                            // Agrupar por test_type: { TDD: [{correct:1}, ...], BDD: [...], SOLID: [...] }
+                            // Agrupar por test_type con datos completos para HU-18 y HU-19
                             const cache = {};
                             qData.forEach(q => {
                                 if (!cache[q.test_type]) cache[q.test_type] = [];
-                                cache[q.test_type].push({ correct: q.correct_option_index });
+                                cache[q.test_type].push({
+                                    correct: q.correct_option_index,
+                                    question_text: q.question_text || '',
+                                    options: Array.isArray(q.options) ? q.options : []
+                                });
                             });
                             // Fallback: si no hay datos en BD para TDD o BDD, usar constantes locales
                             if (!cache['TDD'] || cache['TDD'].length === 0)
-                                cache['TDD'] = QUESTIONS_TDD.map(q => ({ correct: q.correct }));
+                                cache['TDD'] = QUESTIONS_TDD.map(q => ({ correct: q.correct, question_text: q.question, options: q.options }));
                             if (!cache['BDD'] || cache['BDD'].length === 0)
-                                cache['BDD'] = QUESTIONS_BDD.map(q => ({ correct: q.correct }));
+                                cache['BDD'] = QUESTIONS_BDD.map(q => ({ correct: q.correct, question_text: q.question, options: q.options }));
                             setQuestionsCache(cache);
                         }
                     } catch (err) {
@@ -626,6 +630,55 @@ export default function App() {
             total_intentos: stat.total
         }));
     }, [filteredAnalyticsData, questionsCache, analyticsFilter]);
+
+    // HU-19: Datos de detalle por pregunta (estilo Google Forms)
+    const questionDetailData = useMemo(() => {
+        if (analyticsFilter === 'TODO') return null; // Solo visible con filtro específico
+
+        const refQuestions = questionsCache[analyticsFilter] ?? [];
+        if (refQuestions.length === 0) return null;
+
+        if (isAdmin) {
+            // Vista admin: distribución de opciones de TODOS los participantes
+            const stats = refQuestions.map((q, idx) => {
+                const optionCounts = (q.options || []).map(() => 0);
+                let total = 0;
+                filteredAnalyticsData.forEach(res => {
+                    if (!res.answers) return;
+                    try {
+                        const parsed = typeof res.answers === 'string' ? JSON.parse(res.answers) : res.answers;
+                        if (parsed[idx] !== undefined && parsed[idx] !== null) {
+                            optionCounts[parsed[idx]] = (optionCounts[parsed[idx]] || 0) + 1;
+                            total++;
+                        }
+                    } catch { /* ignorar */ }
+                });
+                return {
+                    question_text: q.question_text,
+                    options: q.options || [],
+                    correct: q.correct,
+                    optionCounts,
+                    total,
+                    correctPct: total > 0 ? Math.round((optionCounts[q.correct] / total) * 100) : 0
+                };
+            });
+            return { mode: 'admin', stats };
+        } else {
+            // Vista estudiante: último intento para el testType seleccionado
+            const myResults = allResults
+                .filter(r => r.testType === analyticsFilter)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            if (myResults.length === 0) return { mode: 'student', answers: null, questions: refQuestions };
+
+            let lastAnswers = [];
+            try {
+                const raw = myResults[0].answers;
+                lastAnswers = typeof raw === 'string' ? JSON.parse(raw) : (raw || []);
+            } catch { lastAnswers = []; }
+
+            return { mode: 'student', answers: lastAnswers, questions: refQuestions };
+        }
+    }, [analyticsFilter, questionsCache, filteredAnalyticsData, allResults, isAdmin]);
 
     const surveyMetrics = useMemo(() => {
         if (!isAdmin || surveyResults.length === 0) return null;
@@ -1250,6 +1303,110 @@ export default function App() {
                                     )}
                                 </div>
                             </div>
+
+                        {/* HU-19: Tarjetas de detalle por pregunta — visible solo al filtrar un test específico */}
+                        {questionDetailData && (
+                            <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h3 className="font-black text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2 px-1">
+                                    <span className="text-indigo-500">◈</span>
+                                    Detalle por Pregunta
+                                    {!isAdmin && <span className="text-xs font-medium text-slate-400 dark:text-slate-500 ml-2">(Tu último intento)</span>}
+                                </h3>
+
+                                {questionDetailData.mode === 'admin'
+                                    ? questionDetailData.stats.map((q, qi) => (
+                                        <div key={qi} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                                            <div className="flex items-start justify-between gap-4 mb-5">
+                                                <p className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">
+                                                    <span className="text-indigo-400 font-black mr-2">P{qi + 1}.</span>{q.question_text}
+                                                </p>
+                                                <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
+                                                    q.correctPct >= 70
+                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                        : q.correctPct >= 40
+                                                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                                }`}>
+                                                    {q.correctPct}% aciertos
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {q.options.map((opt, oi) => {
+                                                    const pct = q.total > 0 ? Math.round((q.optionCounts[oi] / q.total) * 100) : 0;
+                                                    const isCorrect = oi === q.correct;
+                                                    return (
+                                                        <div key={oi}>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className={`text-xs font-bold w-5 shrink-0 ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`}>
+                                                                    {isCorrect ? '✓' : String.fromCharCode(65 + oi)}
+                                                                </span>
+                                                                <span className={`text-xs flex-1 ${isCorrect ? 'font-bold text-green-700 dark:text-green-300' : 'text-slate-600 dark:text-slate-300'}`}>{opt}</span>
+                                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">{pct}% ({q.optionCounts[oi]})</span>
+                                                            </div>
+                                                            <div className="ml-7 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-700 ${isCorrect ? 'bg-green-500' : 'bg-indigo-400'}`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {q.total === 0 && (
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 italic mt-2">Sin intentos registrados aún.</p>
+                                            )}
+                                        </div>
+                                    ))
+                                    : questionDetailData.answers === null
+                                        ? (
+                                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-100 dark:border-slate-800">
+                                                <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">Aún no has realizado este test. ¡Anímate a intentarlo!</p>
+                                            </div>
+                                        )
+                                        : questionDetailData.questions.map((q, qi) => {
+                                            const chosen = questionDetailData.answers[qi] ?? null;
+                                            const isCorrect = chosen === q.correct;
+                                            return (
+                                                <div key={qi} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                                                    <div className="flex items-start gap-3 mb-4">
+                                                        <span className={`shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-sm font-black ${
+                                                            isCorrect
+                                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                                                : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                                        }`}>
+                                                            {isCorrect ? '✓' : '✗'}
+                                                        </span>
+                                                        <p className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">
+                                                            <span className="text-indigo-400 font-black mr-1">P{qi + 1}.</span>{q.question_text}
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-2 ml-10">
+                                                        {q.options.map((opt, oi) => {
+                                                            const wasChosen = oi === chosen;
+                                                            const isCorrectOpt = oi === q.correct;
+                                                            return (
+                                                                <div key={oi} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all ${
+                                                                    isCorrectOpt
+                                                                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-300 font-bold'
+                                                                        : wasChosen
+                                                                            ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 font-semibold'
+                                                                            : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                                                                }`}>
+                                                                    <span className="font-black w-4">{String.fromCharCode(65 + oi)}</span>
+                                                                    <span className="flex-1">{opt}</span>
+                                                                    {wasChosen && !isCorrectOpt && <span className="text-red-400 font-black">Tu resp.</span>}
+                                                                    {isCorrectOpt && <span className="text-green-500 font-black">Correcta</span>}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                }
+                            </div>
+                        )}
 
                         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                             <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
