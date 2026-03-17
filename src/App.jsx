@@ -980,47 +980,68 @@ export default function App() {
                         </div>
 
                         {isAdmin && (
-                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
-                                <div className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl">
-                                    <Power className="w-8 h-8" />
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
+                                {/* HU-17: Panel de control dinámico — encabezado */}
+                                <div className="p-8 flex flex-col md:flex-row items-center gap-6 border-b border-slate-100 dark:border-slate-800">
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl">
+                                        <Power className="w-8 h-8" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">Control de Evaluaciones</h3>
+                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Habilita o deshabilita los tests para todos los estudiantes.</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">Control de Evaluaciones</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Habilita o deshabilita los tests para todos los estudiantes.</p>
-                                </div>
-                                <div className="flex gap-4">
-                                    {['TDD', 'BDD'].map(testId => {
-                                        const isActive = testConfig[testId];
+                                {/* HU-17: Lista dinámica de evaluaciones desde testTypes */}
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {testTypes.map(tt => {
+                                        const isActive = tt.is_active;
                                         return (
-                                            <button 
-                                                key={`toggle-${testId}`}
-                                                onClick={async () => {
-                                                    const newValue = !isActive;
-                                                    // Actualización optimista local
-                                                    setTestConfig(prev => ({...prev, [testId]: newValue}));
-                                                    try {
-                                                        const { error: updateError } = await supabase
-                                                            .from('test_config')
-                                                            .update({ is_active: newValue })
-                                                            .eq('test_id', testId);
-                                                        
-                                                        if (updateError) {
-                                                            // Revertir si falla
-                                                            setTestConfig(prev => ({...prev, [testId]: isActive}));
-                                                            setError(`No se pudo actualizar la configuración en DB: ${updateError.message}`);
+                                            <div key={`ctrl-${tt.test_id}`} className="flex items-center justify-between px-8 py-5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <div>
+                                                    <p className="font-bold text-slate-800 dark:text-slate-100">{tt.display_name}</p>
+                                                    {tt.description && (
+                                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{tt.description}</p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={async () => {
+                                                        const newValue = !isActive;
+                                                        // Actualización optimista: testConfig (nav) + testTypes (panel)
+                                                        setTestConfig(prev => ({ ...prev, [tt.test_id]: newValue }));
+                                                        setTestTypes(prev => prev.map(t =>
+                                                            t.test_id === tt.test_id ? { ...t, is_active: newValue } : t
+                                                        ));
+                                                        try {
+                                                            const { error: updateError } = await supabase
+                                                                .from('test_config')
+                                                                .update({ is_active: newValue })
+                                                                .eq('test_id', tt.test_id);
+                                                            if (updateError) {
+                                                                // Revertir ambos estados si falla
+                                                                setTestConfig(prev => ({ ...prev, [tt.test_id]: isActive }));
+                                                                setTestTypes(prev => prev.map(t =>
+                                                                    t.test_id === tt.test_id ? { ...t, is_active: isActive } : t
+                                                                ));
+                                                                setError(`No se pudo actualizar: ${updateError.message}`);
+                                                            }
+                                                        } catch (err) {
+                                                            setTestConfig(prev => ({ ...prev, [tt.test_id]: isActive }));
+                                                            setTestTypes(prev => prev.map(t =>
+                                                                t.test_id === tt.test_id ? { ...t, is_active: isActive } : t
+                                                            ));
+                                                            setError("Error de conexión al actualizar configuración.");
                                                         }
-                                                    } catch (err) {
-                                                        setTestConfig(prev => ({...prev, [testId]: isActive}));
-                                                        setError("Error de conexión al actualizar configuración.");
-                                                    }
-                                                }}
-                                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
-                                                    ${isActive ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400 hover:bg-green-100' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100'}`}
-                                            >
-                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
-                                                {testId} {isActive ? 'ON' : 'OFF'}
-                                            </button>
-                                        )
+                                                    }}
+                                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold transition-all border-2 text-sm
+                                                        ${isActive
+                                                            ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400 hover:bg-green-100'
+                                                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                                                    {isActive ? 'Activo' : 'Inactivo'}
+                                                </button>
+                                            </div>
+                                        );
                                     })}
                                 </div>
                             </div>
