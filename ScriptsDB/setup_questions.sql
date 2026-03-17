@@ -8,15 +8,15 @@
 
 CREATE TABLE IF NOT EXISTS public.questions (
     id            UUID          DEFAULT gen_random_uuid() PRIMARY KEY,
-    test_type     TEXT          NOT NULL CHECK (test_type IN ('TDD', 'BDD')),
-    order_index   SMALLINT      NOT NULL,                   -- Determina el orden de presentación
+    test_type     TEXT          NOT NULL,                              -- Referencia libre a test_config.test_id (sin CHECK rígido)
+    order_index   SMALLINT      NOT NULL,                             -- Determina el orden de presentación
     question_text TEXT          NOT NULL,
-    options       JSONB         NOT NULL,                   -- Arreglo JSON de 4 strings ["opA","opB","opC","opD"]
+    options       JSONB         NOT NULL,                             -- Arreglo JSON de 4 strings ["opA","opB","opC","opD"]
     correct_option_index SMALLINT NOT NULL CHECK (correct_option_index BETWEEN 0 AND 3),
     is_active     BOOLEAN       NOT NULL DEFAULT true,
     created_at    TIMESTAMPTZ   DEFAULT now(),
     updated_at    TIMESTAMPTZ   DEFAULT now(),
-    UNIQUE (test_type, order_index)                         -- Evita duplicar el índice de orden por tipo de test
+    UNIQUE (test_type, order_index)                                   -- Evita duplicar el índice de orden por tipo de test
 );
 
 -- ---------------------------------------------------------------

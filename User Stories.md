@@ -316,3 +316,42 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
   - `order_index` (SMALLINT): orden de presentación de los botones en la UI
 - **Y** los registros existentes de TDD y BDD deben conservar sus datos previos, actualizados con los nuevos campos.
 
+---
+
+### HU-16: Test de Principios SOLID
+
+**Como** estudiante de ingeniería de software
+**Quiero** poder realizar un test de conocimiento sobre los principios SOLID
+**Para** validar y certificar mi comprensión de las buenas prácticas de diseño orientado a objetos en el contexto de mi equipo.
+
+> **Nota técnica:** Esta HU es habilitada íntegramente por datos en Supabase. No requiere cambios de código en la aplicación gracias a la parametrización implementada en HU-14 (preguntas dinámicas) y HU-15 (tipos de test dinámicos). La implementación consiste en ejecutar el script `setup_solid_test.sql`.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Disponibilidad del Test SOLID en la navegación (Camino Feliz)**
+- **Dado** que el script `setup_solid_test.sql` ha sido ejecutado en Supabase
+- **Cuando** un usuario autenticado carga la aplicación
+- **Entonces** debe aparecer un nuevo botón **"Test SOLID"** en la barra de navegación, junto a "Test TDD" y "Test BDD"
+- **Y** al hacer clic debe iniciarse un cuestionario con las preguntas del test SOLID cargadas desde la tabla `questions`.
+
+**Criterios de Aceptación 2: Contenido de las preguntas SOLID**
+- **Dado** que el usuario inicia el Test SOLID
+- **Cuando** responde el cuestionario
+- **Entonces** debe encontrar 5 preguntas de selección múltiple que evalúen los 5 principios:
+  - **S** — Single Responsibility Principle (SRP)
+  - **O** — Open/Closed Principle (OCP)
+  - **L** — Liskov Substitution Principle (LSP)
+  - **I** — Interface Segregation Principle (ISP)
+  - **D** — Dependency Inversion Principle (DIP)
+
+**Criterios de Aceptación 3: Calificación y registro del resultado**
+- **Dado** que el usuario completa las 5 preguntas del Test SOLID
+- **Cuando** confirma su última respuesta
+- **Entonces** el sistema debe calcular el puntaje (`correctas / 5 × 100`) y guardarlo en la tabla `results` con `testType = 'SOLID'`
+- **Y** el resultado debe aparecer en el Dashboard del usuario y en el panel del administrador con el identificador de tipo "SOLID".
+
+**Criterios de Aceptación 4: Gestión y disponibilidad por el Administrador**
+- **Dado** que el test SOLID está registrado en `test_config` con `is_active = true`
+- **Cuando** el administrador lo deshabilita (`is_active = false`) desde su panel de control
+- **Entonces** el botón "Test SOLID" debe desaparecer o mostrarse como bloqueado para los estudiantes
+- **Y** el comportamiento es idéntico al de los tests TDD y BDD (consistencia con HU-9 y HU-15).
