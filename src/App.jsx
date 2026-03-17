@@ -305,13 +305,35 @@ export default function App() {
                     .select('test_id, display_name, description, order_index, is_active')
                     .order('order_index', { ascending: true });
                 if (confError) throw confError;
+                
                 if (data && data.length > 0) {
-                    // Construir mapa booleano para compatibilidad con HU-9 (toggle admin)
-                    const newConfig = {};
-                    data.forEach(item => { newConfig[item.test_id] = item.is_active; });
-                    setTestConfig(newConfig);
-                    // HU-15: Guardar arreglo completo con metadatos de presentación
-                    setTestTypes(data.map(item => ({
+                    let finalConfig = data.map(item => ({ ...item }));
+
+                    // HU-20: Si el usuario es estudiante y tiene un grupo, aplicar overrides
+                    if (!isAdmin && isLoggedIn && userGroupId) {
+                        const { data: groupOverrides, error: goErr } = await supabase
+                            .from('group_test_config')
+                            .select('test_id, is_active')
+                            .eq('group_id', userGroupId);
+                        
+                        if (!goErr && groupOverrides && groupOverrides.length > 0) {
+                            const overrideMap = {};
+                            groupOverrides.forEach(o => overrideMap[o.test_id] = o.is_active);
+                            
+                            finalConfig = finalConfig.map(t => ({
+                                ...t,
+                                is_active: overrideMap[t.test_id] !== undefined ? overrideMap[t.test_id] : t.is_active
+                            }));
+                        }
+                    }
+
+                    // Actualizar mapa booleano (testConfig)
+                    const newConfigMap = {};
+                    finalConfig.forEach(item => { newConfigMap[item.test_id] = item.is_active; });
+                    setTestConfig(newConfigMap);
+
+                    // Actualizar lista completa (testTypes)
+                    setTestTypes(finalConfig.map(item => ({
                         test_id: item.test_id,
                         display_name: item.display_name || `Test ${item.test_id}`,
                         description: item.description || '',
@@ -319,12 +341,11 @@ export default function App() {
                         is_active: item.is_active
                     })));
                 } else {
-                    // Sin datos en BD: usar fallback y registrar advertencia
                     console.warn('[HU-15] Sin tipos de test en BD. Usando fallback local.');
                     setTestTypes(DEFAULT_TEST_TYPES);
                 }
             } catch (err) {
-                console.error('[HU-15] Error al cargar test_config. Usando fallback local.', err);
+                console.error('[HU-15] Error al cargar test_config:', err);
                 setTestTypes(DEFAULT_TEST_TYPES);
             }
         };
@@ -464,6 +485,7 @@ export default function App() {
             .channel('public:group_test_config')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'group_test_config' }, payload => {
                 if (isAdmin && selectedGroupId) fetchGroupDetails(selectedGroupId);
+                if (!isAdmin && isLoggedIn) fetchConfig();
             }).subscribe();
 
         return () => {
@@ -475,7 +497,7 @@ export default function App() {
             supabase.removeChannel(channelGroupMembers);
             supabase.removeChannel(channelGroupTestConfig);
         };
-    }, [user, isLoggedIn, email, isAdmin, view]);
+    }, [user, isLoggedIn, email, isAdmin, view, userGroupId]);
 
     const handleLogin = async () => {
         if (studentName.trim().length < 3) {
@@ -536,29 +558,6 @@ export default function App() {
                 
                 if (memberRow) {
                     setUserGroupId(memberRow.group_id);
-                    // Cargar configuración de tests específica del grupo
-                    const { data: groupConfig, error: gcErr } = await supabase
-                        .from('group_test_config')
-                        .select('test_id, is_active')
-                        .eq('group_id', memberRow.group_id);
-                    
-                    if (!gcErr && groupConfig && groupConfig.length > 0) {
-                        // Crear un mapa de override para testTypes
-                        const override = {};
-                        groupConfig.forEach(c => override[c.test_id] = c.is_active);
-                        
-                        setTestTypes(prev => prev.map(t => ({
-                            ...t,
-                            is_active: override[t.test_id] !== undefined ? override[t.test_id] : t.is_active
-                        })));
-
-                        // También actualizar testConfig para la nav
-                        setTestConfig(prev => {
-                            const newConfig = { ...prev };
-                            groupConfig.forEach(c => newConfig[c.test_id] = c.is_active);
-                            return newConfig;
-                        });
-                    }
                 }
 
                 // HU-21: Auto-registro del estudiante en el grupo seleccionado
@@ -569,21 +568,8 @@ export default function App() {
                     
                     if (regErr) console.warn("Error auto-registrando miembro en grupo:", regErr.message);
                     
-                    // Asegurar que userGroupId y la config del grupo se apliquen si es un registro nuevo
+                    // Asegurar que userGroupId se aplique para disparar fetchConfig vía useEffect
                     setUserGroupId(loginGroupId);
-                    const { data: gConfig } = await supabase
-                        .from('group_test_config')
-                        .select('test_id, is_active')
-                        .eq('group_id', loginGroupId);
-                    
-                    if (gConfig && gConfig.length > 0) {
-                        const override = {};
-                        gConfig.forEach(c => override[c.test_id] = c.is_active);
-                        setTestTypes(prev => prev.map(t => ({
-                            ...t,
-                            is_active: override[t.test_id] !== undefined ? override[t.test_id] : t.is_active
-                        })));
-                    }
                 }
             }
 
