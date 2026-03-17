@@ -168,6 +168,10 @@ export default function App() {
         { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true }
     ]); // HU-15: Lista dinámica de tipos de test desde Supabase
     const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true }); // Estado de configuración de la HU-11
+    const [availableSurveys, setAvailableSurveys] = useState([
+        { id: 'TDD_SESSION', title: 'Sesión TDD', description: 'Evaluación de la capacitación teórico-práctica de Test Driven Development.' },
+        { id: 'BDD_SESSION', title: 'Sesión BDD', description: 'Evaluación de la capacitación teórico-práctica de Behavior Driven Development.' }
+    ]); // HU-24: Lista dinámica de encuestas desde Supabase
     const [surveyData, setSurveyData] = useState({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
     const [surveySubmitting, setSurveySubmitting] = useState(false);
     const [surveyResults, setSurveyResults] = useState([]); // HU-12: Resultados para analíticas admin
@@ -363,13 +367,28 @@ export default function App() {
         };
         
         const fetchSurveyConfig = async () => {
+            const DEFAULT_SURVEYS = [
+                { id: 'TDD_SESSION', title: 'Sesión TDD', description: 'Evaluación de la capacitación teórico-práctica de Test Driven Development.' },
+                { id: 'BDD_SESSION', title: 'Sesión BDD', description: 'Evaluación de la capacitación teórico-práctica de Behavior Driven Development.' }
+            ];
             try {
-                const { data, error: srvError } = await supabase.from('survey_config').select('*');
+                const { data, error: srvError } = await supabase
+                    .from('survey_config')
+                    .select('*')
+                    .order('title');
                 if (srvError) throw srvError;
-                if (data) {
-                    let finalSrvConfig = { TDD_SESSION: true, BDD_SESSION: true };
+                
+                if (data && data.length > 0) {
+                    setAvailableSurveys(data.map(s => ({
+                        id: s.id,
+                        title: s.title,
+                        description: s.description || '',
+                        is_active: s.is_active
+                    })));
+
+                    let finalSrvConfig = {};
                     data.forEach(item => {
-                        finalSrvConfig[item.survey_id] = item.is_active;
+                        finalSrvConfig[item.id] = item.is_active;
                     });
 
                     // HU-22: Aplicar overrides de grupo para estudiantes
@@ -387,9 +406,13 @@ export default function App() {
                     }
 
                     setSurveyConfig(finalSrvConfig);
+                } else {
+                    console.warn('[HU-24] Sin encuestas en BD. Usando fallback.');
+                    setAvailableSurveys(DEFAULT_SURVEYS);
                 }
             } catch (err) {
                 console.error("Survey config fetch error:", err);
+                setAvailableSurveys(DEFAULT_SURVEYS);
             }
         };
         
@@ -1233,7 +1256,7 @@ export default function App() {
                                                 <Star className="w-4 h-4" /> Encuestas del Grupo
                                             </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {AVAILABLE_SURVEYS.map(survey => {
+                                                {availableSurveys.map(survey => {
                                                     const isActive = groupSurveyConfig[survey.id] ?? surveyConfig[survey.id];
                                                     return (
                                                         <button key={survey.id} onClick={() => handleToggleGroupSurvey(survey.id, isActive)}
@@ -1425,9 +1448,9 @@ export default function App() {
                             <h2 className="text-2xl font-black text-slate-800">Encuestas Disponibles</h2>
                             <p className="text-slate-500 font-medium">Selecciona la sesión que deseas calificar</p>
                         </div>
-
+ 
                         <div className="grid gap-4">
-                            {AVAILABLE_SURVEYS.filter(s => surveyConfig[s.id]).map((survey) => (
+                            {availableSurveys.filter(s => surveyConfig[s.id]).map((survey) => (
                                 <button
                                     key={survey.id}
                                     onClick={() => {
@@ -1461,7 +1484,7 @@ export default function App() {
                                 <Star className="w-8 h-8 fill-current" />
                             </div>
                             <h2 className="text-2xl font-black text-slate-800">Encuesta de Satisfacción</h2>
-                            <p className="text-slate-500 font-medium">Sesión: {AVAILABLE_SURVEYS.find(s => s.id === surveyData.survey_id)?.title || surveyData.survey_id}</p>
+                            <p className="text-slate-500 font-medium">Sesión: {availableSurveys.find(s => s.id === surveyData.survey_id)?.title || surveyData.survey_id}</p>
                         </div>
 
                         <div className="space-y-8">

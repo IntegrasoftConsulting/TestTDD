@@ -1,28 +1,31 @@
--- Tabla para controlar la disponibilidad de las encuestas
-CREATE TABLE IF NOT EXISTS public.survey_config (
-    survey_id TEXT PRIMARY KEY, -- p.ej. 'TDD_SESSION', 'BDD_SESSION'
-    is_active BOOLEAN DEFAULT true,
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
+-- setup_survey_config.sql
+-- HU-24: Parametrización de Encuestas desde Base de Datos
 
--- Insertar configuraciones iniciales
-INSERT INTO public.survey_config (survey_id, is_active)
-VALUES 
-    ('TDD_SESSION', true),
-    ('BDD_SESSION', true)
-ON CONFLICT (survey_id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS public.survey_config (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
 -- Habilitar RLS
 ALTER TABLE public.survey_config ENABLE ROW LEVEL SECURITY;
 
--- Política: Todos los usuarios pueden leer la configuración
-DROP POLICY IF EXISTS "Permitir lectura a todos" ON public.survey_config;
-CREATE POLICY "Permitir lectura a todos" 
-ON public.survey_config FOR SELECT 
-USING (true);
+-- Políticas de acceso
+CREATE POLICY "Permitir lectura para todos" ON public.survey_config
+    FOR SELECT USING (true);
 
--- Política: Los usuarios autenticados pueden actualizar (simplificado para admin como en test_config)
-DROP POLICY IF EXISTS "Permitir actualizacion a usuarios autenticados" ON public.survey_config;
-CREATE POLICY "Permitir actualizacion a usuarios autenticados" 
-ON public.survey_config FOR UPDATE 
-USING (auth.role() = 'authenticated');
+CREATE POLICY "Solo admins pueden modificar encuestas" ON public.survey_config
+    FOR ALL USING (
+        auth.jwt() ->> 'email' IN (SELECT email FROM public.admins)
+    );
+
+-- Datos iniciales
+INSERT INTO public.survey_config (id, title, description)
+VALUES 
+    ('TDD_SESSION', 'Sesión TDD', 'Evaluación de la capacitación teórico-práctica de Test Driven Development.'),
+    ('BDD_SESSION', 'Sesión BDD', 'Evaluación de la capacitación teórico-práctica de Behavior Driven Development.')
+ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    description = EXCLUDED.description;

@@ -570,3 +570,18 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Criterio de Aceptación 2:** Al seleccionar un grupo, tanto las gráficas de tendencias/distribución como la tabla de "Resultados Recientes" deben mostrar únicamente los datos de los miembros de dicho grupo.
 - **Criterio de Aceptación 3:** Al seleccionar "Todos los grupos", ambas secciones deben mostrar la información consolidada de toda la plataforma.
 - **Criterio de Aceptación 4:** El filtro de grupo debe persistir o coordinarse correctamente con el filtro por tipo de test.
+ 
+---
+ 
+### HU-24: Parametrización de Encuestas desde Base de Datos
+ 
+**Como** administrador
+**Quiero** que la lista de encuestas disponibles se cargue dinámicamente desde la base de datos
+**Para** poder agregar, modificar o deshabilitar formularios de feedback sin necesidad de actualizar el código de la aplicación.
+ 
+#### Criterios de Aceptación
+- **Criterio de Aceptación 1:** Se crea la tabla `survey_config` en Supabase con campos para ID, título, descripción y estado activo.
+- **Criterio de Aceptación 2:** La aplicación carga las encuestas dinámicamente al inicio y las utiliza en la vista de administración de grupos y en la selección para estudiantes.
+- **Criterio de Aceptación 3:** Se mantiene un fallback local en caso de que la conexión a la base de datos falle.
+- **Criterio de Aceptación 4:** El administrador puede ver y gestionar estas encuestas en el panel de detalle de cada grupo de forma dinámica.
+
