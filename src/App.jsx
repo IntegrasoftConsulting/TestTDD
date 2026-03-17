@@ -33,13 +33,13 @@ function App() {
         
         // Form States
         newGroupModal, setNewGroupModal, newGroupForm, setNewGroupForm,
-        darkMode, setDarkMode,
+        darkMode, setDarkMode, error, setError,
         
         // Handlers
         handleLogin, handleCreateGroup, handleAnswer, 
         handleToggleGroupTest, handleToggleGroupSurvey,
         handleAddMember, handleDeleteMember, handleSurveySubmit,
-        handleStartTest, testType,
+        handleStartTest, testType, loginGroupId, setLoginGroupId,
         fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter
     } = useAppLogic();
 
