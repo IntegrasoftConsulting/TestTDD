@@ -6,7 +6,7 @@ const AnalyticsView = ({
     isAdmin, adminAnalysisTab, setAdminAnalysisTab, 
     analyticsFilter, setAnalyticsFilter, testTypes,
     passRateData, COLORS, trendsData, darkMode,
-    surveyMetrics, questionDetailData, filteredAnalyticsData
+    surveyMetrics, qDetailData: questionDetailData, filteredAnalyticsData
 }) => {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">

@@ -88,7 +88,7 @@ const DashboardView = ({
             />
 
             {/* HU-19: Tarjetas de detalle por pregunta — visible solo al filtrar un test específico */}
-            {questionDetailData && (
+            {qDetailData && (
                 <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <h3 className="font-black text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2 px-1">
                         <span className="text-indigo-500">◈</span>
@@ -96,8 +96,8 @@ const DashboardView = ({
                         {!isAdmin && <span className="text-xs font-medium text-slate-400 dark:text-slate-500 ml-2">(Tu último intento)</span>}
                     </h3>
 
-                    {questionDetailData.mode === 'admin'
-                        ? questionDetailData.stats.map((q, qi) => (
+                    {qDetailData.mode === 'admin'
+                        ? qDetailData.stats.map((q, qi) => (
                             <div key={qi} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                                 <div className="flex items-start justify-between gap-4 mb-5">
                                     <p className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">
@@ -141,14 +141,14 @@ const DashboardView = ({
                                 )}
                             </div>
                         ))
-                        : questionDetailData.answers === null
+                        : qDetailData.answers === null
                             ? (
                                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-100 dark:border-slate-800">
                                     <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">Aún no has realizado este test. ¡Anímate a intentarlo!</p>
                                 </div>
                             )
-                            : questionDetailData.questions.map((q, qi) => {
-                                const chosen = questionDetailData.answers[qi] ?? null;
+                            : qDetailData.questions.map((q, qi) => {
+                                const chosen = qDetailData.answers[qi] ?? null;
                                 const isCorrect = chosen === q.correct;
                                 return (
                                     <div key={qi} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
