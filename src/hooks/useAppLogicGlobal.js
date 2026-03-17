@@ -4,6 +4,8 @@ import { supabase } from '../supabaseClient';
 import { QUESTIONS_TDD, QUESTIONS_BDD } from '../data/questions';
 import { AVAILABLE_SURVEYS } from '../data/surveys';
 
+const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e'];
+
 export const useAppLogic = () => {
     const [user, setUser] = useState(null);
     const [view, setView] = useState('login');
@@ -753,6 +755,6 @@ export const useAppLogic = () => {
         groupView, setGroupView, isGroupsLoading, setIsGroupsLoading, loginGroupId, setLoginGroupId,
         handleLogin, handleCreateGroup, handleAddMember, handleDeleteMember, handleToggleGroupTest,
         handleToggleGroupSurvey, handleStartTest, handleAnswer, handleSurveySubmit,
-        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics
+        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, COLORS
     };
 };
