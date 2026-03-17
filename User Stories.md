@@ -390,3 +390,37 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Cuando** navega por la interfaz
 - **Entonces** no debe visualizar ni tener acceso al panel de control de evaluaciones
 - **Y** los tests desactivados simplemente no deben aparecer como opción en su menú de navegación.
+
+---
+
+### HU-18: Filtros de Analítica Dinámicos por Tipo de Evaluación
+
+**Como** administrador o estudiante de la plataforma
+**Quiero** que los filtros de la sección de Analíticas muestren dinámicamente todos los tipos de evaluación registrados en la base de datos
+**Para** poder analizar el desempeño por cualquier tipo de test (TDD, BDD, SOLID u otros futuros) sin necesidad de cambios en el código.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Filtros generados dinámicamente desde testTypes (Camino Feliz)**
+- **Dado** que un usuario accede a la sección de Analíticas en el Dashboard
+- **Cuando** la sección carga
+- **Entonces** el grupo de botones de filtro debe incluir un botón **"Todos"** (filtro global) más un botón por cada tipo de test presente en `test_config` (leído desde el estado `testTypes`)
+- **Y** los botones deben mostrarse en el orden definido por `order_index`
+- **Y** el texto de cada botón debe usar el campo `display_name` del test (ej. `"Test TDD"`, `"Test BDD"`, `"Test SOLID"`).
+
+**Criterios de Aceptación 2: Filtrado correcto de resultados históricos**
+- **Dado** que el usuario selecciona el botón de un tipo de test específico (ej. "Test SOLID")
+- **Cuando** el filtro se aplica
+- **Entonces** las gráficas de distribución de puntajes (torta) y de aciertos por pregunta (barras) deben mostrar únicamente los resultados cuyo campo `testType` coincida con el `test_id` seleccionado (ej. `'SOLID'`)
+- **Y** al seleccionar "Todos", las gráficas deben incluir los resultados de todos los tipos de test disponibles.
+
+**Criterios de Aceptación 3: Ningún filtro hardcodeado en el código**
+- **Dado** que se agrega un nuevo tipo de test a `test_config` en Supabase
+- **Cuando** el usuario recarga el Dashboard
+- **Entonces** el nuevo tipo debe aparecer automáticamente como opción de filtro en la sección de Analíticas, sin necesidad de modificar el código fuente.
+
+**Criterios de Aceptación 4: Gráfica de barras por pregunta compatible con múltiples tipos**
+- **Dado** que el administrador filtra por un tipo de test con preguntas en la tabla `questions`
+- **Cuando** se visualiza el gráfico de aciertos por pregunta
+- **Entonces** el eje X debe mostrar las etiquetas `P1` a `PN` según el número real de preguntas del tipo seleccionado
+- **Y** la comparación de respuestas correctas debe realizarse contra las preguntas del tipo de test activo (leídas desde Supabase), no contra constantes locales hardcodeadas.
