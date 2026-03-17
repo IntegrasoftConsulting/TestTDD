@@ -1,6 +1,6 @@
 import React from 'react';
 // Force redeploy v1.6 - Definitiva
-import { useAppLogic } from './hooks/useAppLogic';
+import { useAppLogic } from './hooks/useAppLogicGlobal';
 import Header from './components/Header';
 import LoginForm from './components/LoginForm';
 import QuizView from './components/QuizView';

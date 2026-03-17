@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-// Force redeploy v1.2
+// Cache Burster v1.7 - 2026-03-17 15:58
 import { supabase } from '../supabaseClient';
 import { QUESTIONS_TDD, QUESTIONS_BDD } from '../data/questions';
 import { AVAILABLE_SURVEYS } from '../data/surveys';
