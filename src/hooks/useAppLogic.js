@@ -214,13 +214,13 @@ export const useAppLogic = () => {
             const { data, error: srvError } = await supabase
                 .from('survey_config')
                 .select('*')
-                .order('title');
+                .order('id');
             if (srvError) throw srvError;
             
             if (data && data.length > 0) {
                 setAvailableSurveys(data.map(s => ({
                     id: s.id,
-                    title: s.title,
+                    title: s.title || s.id,
                     description: s.description || '',
                     is_active: s.is_active
                 })));
