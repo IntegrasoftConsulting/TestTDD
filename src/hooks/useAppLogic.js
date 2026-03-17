@@ -213,15 +213,15 @@ export const useAppLogic = () => {
         try {
             const { data, error: srvError } = await supabase
                 .from('survey_config')
-                .select('survey_id, description, is_active')
+                .select('survey_id, is_active')
                 .order('survey_id');
             if (srvError) throw srvError;
             
             if (data && data.length > 0) {
                 setAvailableSurveys(data.map(s => ({
                     id: s.survey_id,
-                    title: s.survey_id, // Fallback ya que no hay columna title
-                    description: s.description || '',
+                    title: s.survey_id,
+                    description: '', // Columna inexiste en DB
                     is_active: s.is_active
                 })));
 
@@ -608,7 +608,6 @@ export const useAppLogic = () => {
             if (surveyData.survey_id) {
                 await supabase.from('survey_config').upsert([{
                     survey_id: surveyData.survey_id,
-                    description: 'Encuesta generada automáticamente',
                     is_active: true
                 }], { onConflict: 'survey_id' });
             }
