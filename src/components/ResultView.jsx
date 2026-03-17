@@ -1,7 +1,7 @@
 import React from 'react';
-import { CheckCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle, ArrowRight, Star } from 'lucide-react';
 
-const ResultView = ({ testType, finalScore, stats, setView }) => {
+const ResultView = ({ testType, finalScore, stats, setView, setSurveyData }) => {
     return (
         <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 text-center animate-in fade-in zoom-in duration-500">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -21,10 +21,24 @@ const ResultView = ({ testType, finalScore, stats, setView }) => {
                 </div>
             </div>
 
-            <button onClick={() => setView('dashboard')}
-                className="inline-flex items-center gap-2 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-2xl transition-all hover:gap-3 active:scale-95 shadow-lg">
-                Volver al Dashboard <ArrowRight className="w-5 h-5" />
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                    onClick={() => {
+                        const surveyId = `${testType || 'TDD'}_SESSION`.toUpperCase();
+                        setSurveyData(prev => ({ ...prev, survey_id: surveyId }));
+                        setView('survey');
+                    }}
+                    className="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-10 rounded-2xl transition-all hover:gap-3 active:scale-95 shadow-lg group"
+                >
+                    Dar Feedback <Star className="w-5 h-5 group-hover:fill-current" />
+                </button>
+
+                <button onClick={() => setView('dashboard')}
+                    className="inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-2xl transition-all hover:gap-3 active:scale-95 shadow-lg"
+                >
+                    Volver al Dashboard <ArrowRight className="w-5 h-5" />
+                </button>
+            </div>
         </div>
     );
 };

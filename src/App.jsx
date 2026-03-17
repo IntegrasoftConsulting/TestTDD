@@ -143,6 +143,7 @@ function App() {
                         finalScore={finalScore}
                         stats={stats}
                         setView={setView}
+                        setSurveyData={setSurveyData}
                     />
                 )}
 

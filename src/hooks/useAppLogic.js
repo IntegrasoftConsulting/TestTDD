@@ -604,6 +604,16 @@ export const useAppLogic = () => {
         }
         setSurveySubmitting(true);
         try {
+            // [HU-28] Asegurar que la configuración de la encuesta existe si es nueva
+            if (surveyData.survey_id) {
+                await supabase.from('survey_config').upsert([{
+                    id: surveyData.survey_id,
+                    title: surveyData.survey_id.replace(/_/g, ' '),
+                    description: 'Encuesta generada automáticamente',
+                    is_active: true
+                }], { onConflict: 'id' });
+            }
+
             const { error: surveyError } = await supabase.from('survey_responses').insert([{
                 user_email: email,
                 student_name: studentName,
