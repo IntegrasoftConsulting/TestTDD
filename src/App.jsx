@@ -1,4 +1,5 @@
 import React from 'react';
+// Force redeploy v1.2
 import { useAppLogic } from './hooks/useAppLogic';
 import Header from './components/Header';
 import LoginForm from './components/LoginForm';

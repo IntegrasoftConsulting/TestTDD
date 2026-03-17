@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+// Force redeploy v1.2
 import { supabase } from '../supabaseClient';
 import { QUESTIONS_TDD, QUESTIONS_BDD } from '../data/questions';
 import { AVAILABLE_SURVEYS } from '../data/surveys';
