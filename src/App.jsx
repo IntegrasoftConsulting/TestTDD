@@ -851,6 +851,19 @@ export default function App() {
         }
     };
 
+    // --- ANALYTICS PROCESSING (HU-8 + HU-20) ---
+    const filteredAnalyticsData = useMemo(() => {
+        let data = analyticsFilter === 'TODO' ? allResults : allResults.filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
+        
+        // HU-20: Filtrado por grupo
+        if (groupAnalyticsFilter !== 'ALL') {
+            const memberEmails = new Set(groupMembers.map(m => m.email));
+            data = data.filter(r => memberEmails.has(r.email));
+        }
+        
+        return data;
+    }, [allResults, analyticsFilter, groupAnalyticsFilter, groupMembers]);
+
     const stats = useMemo(() => {
         // HU-23: Las métricas ahora siguen el filtrado dinámico (grupo y tipo de test)
         if (filteredAnalyticsData.length === 0) return { avg: 0, total: 0 };
@@ -860,25 +873,6 @@ export default function App() {
             total: filteredAnalyticsData.length
         };
     }, [filteredAnalyticsData]);
-
-    // --- ANALYTICS PROCESSING (HU-8 + HU-20) ---
-    const filteredAnalyticsData = useMemo(() => {
-        let data = analyticsFilter === 'TODO' ? allResults : allResults.filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
-        
-        // HU-20: Filtrado por grupo
-        if (groupAnalyticsFilter !== 'ALL') {
-            // El groupAnalyticsFilter es el group_id. Necesitamos los emails de ese grupo.
-            // Para simplificar, usaremos los groupMembers si el filtro es el grupo seleccionado actualmente,
-            // pero para una solución robusta, el filtro debería disparar un fetch de emails de ese grupo.
-            // Por ahora, asumimos que groupMembers tiene los miembros del grupo filtrado si el admin está viéndolo,
-            // o implementamos una lógica de filtrado directo por group_id si el resultado tuviera esa info.
-            // Como 'results' no tiene group_id, usamos el conjunto de emails.
-            const memberEmails = new Set(groupMembers.map(m => m.email));
-            data = data.filter(r => memberEmails.has(r.email));
-        }
-        
-        return data;
-    }, [allResults, analyticsFilter, groupAnalyticsFilter, groupMembers]);
 
     const passRateData = useMemo(() => {
         let ranges = {

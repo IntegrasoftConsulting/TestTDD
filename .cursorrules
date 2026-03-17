@@ -1,0 +1,15 @@
+# Cursor Rules - TestTDD
+ 
+## React & JSX Stability
+- Maintain strict order of variable and hook definitions.
+- Always verify JSX tag balancing in large components like App.jsx.
+- Prevent Circular dependencies and Reference Errors.
+ 
+## UI/UX Standards
+- Use HSL based color palettes.
+- Apply glassmorphism and modern shadows.
+- Ensure Dark Mode compatibility.
+ 
+## Agent Guidelines
+- Read .agent/rules.md for detailed architectural constraints.
+- Prioritize concise edits to avoid code corruption.
