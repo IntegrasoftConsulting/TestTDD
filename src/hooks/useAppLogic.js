@@ -213,7 +213,7 @@ export const useAppLogic = () => {
         try {
             const { data, error: srvError } = await supabase
                 .from('survey_config')
-                .select('*')
+                .select('id, description, is_active')
                 .order('id');
             if (srvError) throw srvError;
             
@@ -608,7 +608,6 @@ export const useAppLogic = () => {
             if (surveyData.survey_id) {
                 await supabase.from('survey_config').upsert([{
                     id: surveyData.survey_id,
-                    title: surveyData.survey_id.replace(/_/g, ' '),
                     description: 'Encuesta generada automáticamente',
                     is_active: true
                 }], { onConflict: 'id' });
