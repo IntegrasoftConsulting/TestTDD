@@ -183,6 +183,7 @@ export default function App() {
     const [groups, setGroups] = useState([]);                   // Lista de grupos (admin)
     const [selectedGroupId, setSelectedGroupId] = useState(null); // Grupo en detalle (admin)
     const [groupTestConfig, setGroupTestConfig] = useState({});   // { test_id: is_active } del grupo seleccionado
+    const [groupSurveyConfig, setGroupSurveyConfig] = useState({}); // HU-22: { survey_id: is_active } del grupo seleccionado
     const [groupMembers, setGroupMembers] = useState([]);          // Miembros del grupo seleccionado
     const [groupAnalyticsFilter, setGroupAnalyticsFilter] = useState('ALL'); // 'ALL' | group_id
     const [newGroupModal, setNewGroupModal] = useState(false);    // Mostrar modal de creación
@@ -231,6 +232,16 @@ export default function App() {
             const configMap = {};
             (configData || []).forEach(c => configMap[c.test_id] = c.is_active);
             setGroupTestConfig(configMap);
+
+            // HU-22: Cargar configuración de encuestas específica del grupo
+            const { data: srvConfigData } = await supabase
+                .from('group_survey_config')
+                .select('survey_id, is_active')
+                .eq('group_id', groupId);
+            
+            const srvMap = {};
+            (srvConfigData || []).forEach(c => srvMap[c.survey_id] = c.is_active);
+            setGroupSurveyConfig(srvMap);
 
             const { data: membersData } = await supabase
                 .from('group_members')
@@ -355,11 +366,26 @@ export default function App() {
                 const { data, error: srvError } = await supabase.from('survey_config').select('*');
                 if (srvError) throw srvError;
                 if (data) {
-                    const newSrvConfig = { TDD_SESSION: true, BDD_SESSION: true };
+                    let finalSrvConfig = { TDD_SESSION: true, BDD_SESSION: true };
                     data.forEach(item => {
-                        newSrvConfig[item.survey_id] = item.is_active;
+                        finalSrvConfig[item.survey_id] = item.is_active;
                     });
-                    setSurveyConfig(newSrvConfig);
+
+                    // HU-22: Aplicar overrides de grupo para estudiantes
+                    if (!isAdmin && isLoggedIn && userGroupId) {
+                        const { data: groupSrvOverrides } = await supabase
+                            .from('group_survey_config')
+                            .select('survey_id, is_active')
+                            .eq('group_id', userGroupId);
+                        
+                        if (groupSrvOverrides && groupSrvOverrides.length > 0) {
+                            groupSrvOverrides.forEach(o => {
+                                finalSrvConfig[o.survey_id] = o.is_active;
+                            });
+                        }
+                    }
+
+                    setSurveyConfig(finalSrvConfig);
                 }
             } catch (err) {
                 console.error("Survey config fetch error:", err);
@@ -488,6 +514,13 @@ export default function App() {
                 if (!isAdmin && isLoggedIn) fetchConfig();
             }).subscribe();
 
+        const channelGroupSurveyConfig = supabase
+            .channel('public:group_survey_config')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_survey_config' }, payload => {
+                if (isAdmin && selectedGroupId) fetchGroupDetails(selectedGroupId);
+                if (!isAdmin && isLoggedIn) fetchSurveyConfig();
+            }).subscribe();
+
         return () => {
             supabase.removeChannel(channelResults);
             supabase.removeChannel(channelConfig);
@@ -496,8 +529,9 @@ export default function App() {
             supabase.removeChannel(channelGroups);
             supabase.removeChannel(channelGroupMembers);
             supabase.removeChannel(channelGroupTestConfig);
+            supabase.removeChannel(channelGroupSurveyConfig);
         };
-    }, [user, isLoggedIn, email, isAdmin, view, userGroupId]);
+    }, [user, isLoggedIn, email, isAdmin, view, userGroupId, selectedGroupId]);
 
     const handleLogin = async () => {
         if (studentName.trim().length < 3) {
@@ -650,6 +684,25 @@ export default function App() {
         } catch (err) {
             setGroupTestConfig(prev => ({ ...prev, [testId]: currentStatus }));
             setError(`Error al actualizar config de grupo: ${err.message}`);
+        }
+    };
+
+    const handleToggleGroupSurvey = async (surveyId, currentStatus) => {
+        if (!selectedGroupId) return;
+        const newStatus = !currentStatus;
+        
+        // Optimista
+        setGroupSurveyConfig(prev => ({ ...prev, [surveyId]: newStatus }));
+
+        try {
+            const { error } = await supabase
+                .from('group_survey_config')
+                .upsert({ group_id: selectedGroupId, survey_id: surveyId, is_active: newStatus }, { onConflict: 'group_id,survey_id' });
+            
+            if (error) throw error;
+        } catch (err) {
+            setGroupSurveyConfig(prev => ({ ...prev, [surveyId]: currentStatus }));
+            setError(`Error al actualizar config de encuesta de grupo: ${err.message}`);
         }
     };
 
@@ -1175,6 +1228,26 @@ export default function App() {
 
                                         <section>
                                             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <Star className="w-4 h-4" /> Encuestas del Grupo
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {AVAILABLE_SURVEYS.map(survey => {
+                                                    const isActive = groupSurveyConfig[survey.id] ?? surveyConfig[survey.id];
+                                                    return (
+                                                        <button key={survey.id} onClick={() => handleToggleGroupSurvey(survey.id, isActive)}
+                                                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${isActive ? 'border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10 text-amber-700 dark:text-amber-300' : 'border-slate-100 dark:border-slate-800 text-slate-400 opacity-60'}`}
+                                                        >
+                                                            <span className="font-bold text-sm">{survey.title}</span>
+                                                            <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 mt-2 italic">* Los cambios aquí sobreescriben la configuración global de encuestas para este grupo.</p>
+                                        </section>
+
+                                        <section>
+                                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                                 <User className="w-4 h-4" /> Miembros
                                             </h4>
                                             <div className="flex gap-2 mb-4">
@@ -1474,118 +1547,7 @@ export default function App() {
                             </div>
                         </div>
 
-                        {isAdmin && (
-                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
-                                {/* HU-17: Panel de control dinámico — encabezado */}
-                                <div className="p-8 flex flex-col md:flex-row items-center gap-6 border-b border-slate-100 dark:border-slate-800">
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl">
-                                        <Power className="w-8 h-8" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">Control de Evaluaciones</h3>
-                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Habilita o deshabilita los tests para todos los estudiantes.</p>
-                                    </div>
-                                </div>
-                                {/* HU-17: Lista dinámica de evaluaciones desde testTypes */}
-                                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                                    {testTypes.map(tt => {
-                                        const isActive = tt.is_active;
-                                        return (
-                                            <div key={`ctrl-${tt.test_id}`} className="flex items-center justify-between px-8 py-5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                                                <div>
-                                                    <p className="font-bold text-slate-800 dark:text-slate-100">{tt.display_name}</p>
-                                                    {tt.description && (
-                                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{tt.description}</p>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={async () => {
-                                                        const newValue = !isActive;
-                                                        // Actualización optimista: testConfig (nav) + testTypes (panel)
-                                                        setTestConfig(prev => ({ ...prev, [tt.test_id]: newValue }));
-                                                        setTestTypes(prev => prev.map(t =>
-                                                            t.test_id === tt.test_id ? { ...t, is_active: newValue } : t
-                                                        ));
-                                                        try {
-                                                            const { error: updateError } = await supabase
-                                                                .from('test_config')
-                                                                .update({ is_active: newValue })
-                                                                .eq('test_id', tt.test_id);
-                                                            if (updateError) {
-                                                                // Revertir ambos estados si falla
-                                                                setTestConfig(prev => ({ ...prev, [tt.test_id]: isActive }));
-                                                                setTestTypes(prev => prev.map(t =>
-                                                                    t.test_id === tt.test_id ? { ...t, is_active: isActive } : t
-                                                                ));
-                                                                setError(`No se pudo actualizar: ${updateError.message}`);
-                                                            }
-                                                        } catch (err) {
-                                                            setTestConfig(prev => ({ ...prev, [tt.test_id]: isActive }));
-                                                            setTestTypes(prev => prev.map(t =>
-                                                                t.test_id === tt.test_id ? { ...t, is_active: isActive } : t
-                                                            ));
-                                                            setError("Error de conexión al actualizar configuración.");
-                                                        }
-                                                    }}
-                                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold transition-all border-2 text-sm
-                                                        ${isActive
-                                                            ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400 hover:bg-green-100'
-                                                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100'}`}
-                                                >
-                                                    <div className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
-                                                    {isActive ? 'Activo' : 'Inactivo'}
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {isAdmin && (
-                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 p-8 flex flex-col md:flex-row items-center gap-6">
-                                <div className="p-4 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 rounded-2xl">
-                                    <MessageSquare className="w-8 h-8" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">Control de Encuestas</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Habilita o deshabilita la visibilidad de las encuestas para los usuarios.</p>
-                                </div>
-                                <div className="flex gap-4">
-                                    {AVAILABLE_SURVEYS.map(survey => {
-                                        const isActive = surveyConfig[survey.id];
-                                        return (
-                                            <button 
-                                                key={`toggle-srv-${survey.id}`}
-                                                onClick={async () => {
-                                                    const newValue = !isActive;
-                                                    setSurveyConfig(prev => ({...prev, [survey.id]: newValue}));
-                                                    try {
-                                                        const { error: updateError } = await supabase
-                                                            .from('survey_config')
-                                                            .update({ is_active: newValue })
-                                                            .eq('survey_id', survey.id);
-                                                        
-                                                        if (updateError) {
-                                                            setSurveyConfig(prev => ({...prev, [survey.id]: isActive}));
-                                                            setError(`No se pudo actualizar configuración de encuesta: ${updateError.message}`);
-                                                        }
-                                                    } catch (err) {
-                                                        setSurveyConfig(prev => ({...prev, [survey.id]: isActive}));
-                                                        setError("Error de conexión al actualizar encuesta.");
-                                                    }
-                                                }}
-                                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 
-                                                    ${isActive ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-400 hover:bg-green-100' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-100'}`}
-                                            >
-                                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
-                                                {survey.title} {isActive ? 'ON' : 'OFF'}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        {/* HU-22: Controles de evaluaciones y encuestas movidos al detalle de grupos */}
 
                         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
                                 <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 dark:bg-slate-800/30 gap-4">
