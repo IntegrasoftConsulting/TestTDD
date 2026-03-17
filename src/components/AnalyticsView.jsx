@@ -1,5 +1,6 @@
 import React from 'react';
-import { BarChart3, PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { BarChart3 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 const AnalyticsView = ({ 
     isAdmin, adminAnalysisTab, setAdminAnalysisTab, 
