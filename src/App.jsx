@@ -40,7 +40,8 @@ function App() {
         handleToggleGroupTest, handleToggleGroupSurvey,
         handleAddMember, handleDeleteMember, handleSurveySubmit,
         handleStartTest, testType, loginGroupId, setLoginGroupId,
-        fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter
+        fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter,
+        questionDetailData
     } = useAppLogic();
 
     return (
