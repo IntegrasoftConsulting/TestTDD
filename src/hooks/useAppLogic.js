@@ -213,21 +213,21 @@ export const useAppLogic = () => {
         try {
             const { data, error: srvError } = await supabase
                 .from('survey_config')
-                .select('id, description, is_active')
-                .order('id');
+                .select('survey_id, description, is_active')
+                .order('survey_id');
             if (srvError) throw srvError;
             
             if (data && data.length > 0) {
                 setAvailableSurveys(data.map(s => ({
-                    id: s.id,
-                    title: s.title || s.id,
+                    id: s.survey_id,
+                    title: s.survey_id, // Fallback ya que no hay columna title
                     description: s.description || '',
                     is_active: s.is_active
                 })));
 
                 let finalSrvConfig = {};
                 data.forEach(item => {
-                    finalSrvConfig[item.id] = item.is_active;
+                    finalSrvConfig[item.survey_id] = item.is_active;
                 });
 
                 if (!isAdmin && isLoggedIn && userGroupId) {
@@ -607,10 +607,10 @@ export const useAppLogic = () => {
             // [HU-28] Asegurar que la configuración de la encuesta existe si es nueva
             if (surveyData.survey_id) {
                 await supabase.from('survey_config').upsert([{
-                    id: surveyData.survey_id,
+                    survey_id: surveyData.survey_id,
                     description: 'Encuesta generada automáticamente',
                     is_active: true
-                }], { onConflict: 'id' });
+                }], { onConflict: 'survey_id' });
             }
 
             const { error: surveyError } = await supabase.from('survey_responses').insert([{
