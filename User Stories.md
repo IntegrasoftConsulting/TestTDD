@@ -424,3 +424,44 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Cuando** se visualiza el gráfico de aciertos por pregunta
 - **Entonces** el eje X debe mostrar las etiquetas `P1` a `PN` según el número real de preguntas del tipo seleccionado
 - **Y** la comparación de respuestas correctas debe realizarse contra las preguntas del tipo de test activo (leídas desde Supabase), no contra constantes locales hardcodeadas.
+
+---
+
+### HU-19: Analítica Detallada por Pregunta (Estilo Google Forms)
+
+**Como** usuario o administrador de la plataforma
+**Quiero** que al seleccionar un tipo de test en la sección de Analíticas, se muestre el desglose estadístico de cada pregunta de forma visual e individual
+**Para** identificar con facilidad qué preguntas fueron más difíciles, cuáles opciones se eligieron con mayor frecuencia, y entender el desempeño tanto individual como grupal.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Tarjetas de pregunta con distribución de respuestas — Administrador (Camino Feliz)**
+- **Dado** que un administrador selecciona un tipo de test específico en el filtro de Analíticas
+- **Cuando** la sección de detalle por pregunta carga
+- **Entonces** debe mostrarse una tarjeta por cada pregunta del test, que incluya:
+  - El texto completo de la pregunta
+  - Una barra de progreso o gráfico de barras horizontal por cada opción de respuesta, mostrando el **porcentaje y conteo de veces** que fue seleccionada por todos los participantes
+  - La opción correcta resaltada visualmente (ej. borde verde o ícono de check)
+  - El porcentaje global de acierto de esa pregunta (ej. `"72% respondió correctamente"`)
+
+**Criterios de Aceptación 2: Tarjetas de pregunta con respuesta personal — Estudiante**
+- **Dado** que un estudiante accede a su sección de Analíticas y selecciona un tipo de test
+- **Cuando** ha realizado al menos un intento de dicho test
+- **Entonces** debe ver una tarjeta por cada pregunta mostrando:
+  - El texto de la pregunta
+  - La opción que seleccionó en su último intento (resaltada)
+  - Si su respuesta fue correcta o incorrecta (ícono ✓ o ✗)
+  - La opción correcta identificada visualmente
+- **Y** si el estudiante tiene múltiples intentos, se muestran los datos de su intento más reciente.
+
+**Criterios de Aceptación 3: Solo visible al seleccionar un test específico (no en "Todos")**
+- **Dado** que el filtro de Analíticas está en "Todos"
+- **Cuando** el usuario visualiza el dashboard
+- **Entonces** la sección de detalle por pregunta **no debe mostrarse** (o debe mostrar un mensaje indicando que seleccione un tipo de test específico)
+- **Y** al seleccionar un tipo concreto (ej. "Test SOLID"), las tarjetas de pregunta deben aparecer debajo de las gráficas existentes.
+
+**Criterios de Aceptación 4: Preguntas cargadas desde Supabase**
+- **Dado** que el sistema consulta el detalle por pregunta
+- **Cuando** el usuario selecciona un filtro de test
+- **Entonces** los textos de las preguntas y las opciones deben obtenerse desde la tabla `questions` (campo `question_text` y `options`) filtradas por `test_type`
+- **Y** los datos de respuestas de los participantes deben leerse desde la tabla `results` (campo `answers`), garantizando que el análisis refleja los datos reales de la base de datos.
