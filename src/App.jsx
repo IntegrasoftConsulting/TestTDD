@@ -172,6 +172,7 @@ export default function App() {
     }); // HU-13: Modo Oscuro
     const [questions, setQuestions] = useState([]); // HU-14: Preguntas cargadas desde Supabase
     const [questionsLoading, setQuestionsLoading] = useState(false); // HU-14: Spinner de carga de preguntas
+    const [questionsCache, setQuestionsCache] = useState({}); // HU-18: Cache de preguntas por test_type para analítica
 
     // --- AUTH ---
     useEffect(() => {
@@ -308,7 +309,35 @@ export default function App() {
         fetchSurveyConfig();
         if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
-            if (isAdmin) fetchSurveyResults();
+            if (isAdmin) {
+                fetchSurveyResults();
+                // HU-18: Cargar todas las preguntas para analítica al abrir el dashboard
+                (async () => {
+                    try {
+                        const { data: qData, error: qErr } = await supabase
+                            .from('questions')
+                            .select('test_type, order_index, correct_option_index')
+                            .eq('is_active', true)
+                            .order('order_index', { ascending: true });
+                        if (!qErr && qData) {
+                            // Agrupar por test_type: { TDD: [{correct:1}, ...], BDD: [...], SOLID: [...] }
+                            const cache = {};
+                            qData.forEach(q => {
+                                if (!cache[q.test_type]) cache[q.test_type] = [];
+                                cache[q.test_type].push({ correct: q.correct_option_index });
+                            });
+                            // Fallback: si no hay datos en BD para TDD o BDD, usar constantes locales
+                            if (!cache['TDD'] || cache['TDD'].length === 0)
+                                cache['TDD'] = QUESTIONS_TDD.map(q => ({ correct: q.correct }));
+                            if (!cache['BDD'] || cache['BDD'].length === 0)
+                                cache['BDD'] = QUESTIONS_BDD.map(q => ({ correct: q.correct }));
+                            setQuestionsCache(cache);
+                        }
+                    } catch (err) {
+                        console.warn('[HU-18] No se pudo cargar el cache de preguntas para analítica.', err);
+                    }
+                })();
+            }
         }
 
         const channelResults = supabase
@@ -555,13 +584,14 @@ export default function App() {
     const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#6366f1']; // Rojo, Naranja, Verde, Índigo (para los 4 rangos)
 
     const trendsData = useMemo(() => {
-        const questionsStats = [
-            { name: 'P1', correct: 0, total: 0 },
-            { name: 'P2', correct: 0, total: 0 },
-            { name: 'P3', correct: 0, total: 0 },
-            { name: 'P4', correct: 0, total: 0 },
-            { name: 'P5', correct: 0, total: 0 },
-        ];
+        // HU-18: Array dinámico — el tamaño se basa en el máximo de preguntas del cache
+        const maxQuestions = analyticsFilter === 'TODO'
+            ? Math.max(...Object.values(questionsCache).map(q => q.length), 5)
+            : (questionsCache[analyticsFilter]?.length || 5);
+
+        const questionsStats = Array.from({ length: maxQuestions }, (_, i) => ({
+            name: `P${i + 1}`, correct: 0, total: 0
+        }));
 
         filteredAnalyticsData.forEach(res => {
             if (res.answers) {
@@ -571,13 +601,17 @@ export default function App() {
                 } catch (e) {
                     return;
                 }
-                
-                const refQuestions = res.testType === 'BDD' ? QUESTIONS_BDD : QUESTIONS_TDD;
-                
+
+                // HU-18: usar questionsCache por test_type; fallback a constantes locales
+                const refQuestions = questionsCache[res.testType]
+                    ?? (res.testType === 'BDD'
+                        ? QUESTIONS_BDD.map(q => ({ correct: q.correct }))
+                        : QUESTIONS_TDD.map(q => ({ correct: q.correct })));
+
                 parsedAnswers.forEach((ans, idx) => {
-                    if (idx < 5) {
+                    if (idx < questionsStats.length) {
                         questionsStats[idx].total++;
-                        if (ans === refQuestions[idx].correct) {
+                        if (refQuestions[idx] && ans === refQuestions[idx].correct) {
                             questionsStats[idx].correct++;
                         }
                     }
@@ -591,7 +625,7 @@ export default function App() {
             aciertos: stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0,
             total_intentos: stat.total
         }));
-    }, [filteredAnalyticsData]);
+    }, [filteredAnalyticsData, questionsCache, analyticsFilter]);
 
     const surveyMetrics = useMemo(() => {
         if (!isAdmin || surveyResults.length === 0) return null;
@@ -1115,13 +1149,14 @@ export default function App() {
                                             </div>
                                         )}
                                         <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
-                                            {['TODO', 'TDD', 'BDD'].map(f => (
-                                                <button 
-                                                    key={f}
-                                                    onClick={() => setAnalyticsFilter(f)}
-                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                            {/* HU-18: Filtros de analítica dinámicos desde testTypes */}
+                                            {[{ test_id: 'TODO', display_name: 'Todos' }, ...testTypes].map(f => (
+                                                <button
+                                                    key={f.test_id}
+                                                    onClick={() => setAnalyticsFilter(f.test_id)}
+                                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f.test_id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                                                 >
-                                                    {f === 'TODO' ? 'Todos' : f}
+                                                    {f.display_name}
                                                 </button>
                                             ))}
                                         </div>
