@@ -131,7 +131,7 @@ function App() {
                 {view === 'quiz' && (
                     <QuizView 
                         questionsLoading={questionsLoading}
-                        testType={analyticsFilter} // O el tipo actual
+                        testType={testType} 
                         currentQuestion={currentQuestion}
                         questions={questions}
                         answers={answers}
@@ -142,7 +142,7 @@ function App() {
 
                 {view === 'result' && (
                     <ResultView 
-                        testType={analyticsFilter}
+                        testType={testType}
                         finalScore={finalScore}
                         stats={stats}
                         setView={setView}

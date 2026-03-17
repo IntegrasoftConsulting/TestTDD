@@ -609,10 +609,11 @@ export const useAppLogic = () => {
         try {
             // [HU-28] Asegurar que la configuración de la encuesta existe si es nueva
             if (surveyData.survey_id) {
-                await supabase.from('survey_config').upsert([{
+                const { error: upError } = await supabase.from('survey_config').upsert([{
                     survey_id: surveyData.survey_id,
                     is_active: true
                 }], { onConflict: 'survey_id' });
+                if (upError) console.error("Error ensuring survey config:", upError);
             }
 
             const { error: surveyError } = await supabase.from('survey_responses').insert([{
