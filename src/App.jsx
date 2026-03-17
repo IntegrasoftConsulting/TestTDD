@@ -156,7 +156,11 @@ export default function App() {
     const [error, setError] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para controlar si el usuario logueado es Administrador
     const [analyticsFilter, setAnalyticsFilter] = useState('TODO'); // Filtro para gráficas (HU-8)
-    const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true }); // Estado de configuración de la HU-9
+    const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true }); // Estado de configuración de la HU-9 (mapa booleano para toggle admin)
+    const [testTypes, setTestTypes] = useState([
+        { test_id: 'TDD', display_name: 'Test TDD', description: 'Test Driven Development', order_index: 1, is_active: true },
+        { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true }
+    ]); // HU-15: Lista dinámica de tipos de test desde Supabase
     const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true }); // Estado de configuración de la HU-11
     const [surveyData, setSurveyData] = useState({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
     const [surveySubmitting, setSurveySubmitting] = useState(false);
@@ -215,18 +219,38 @@ export default function App() {
         if (!user || !supabase) return;
 
         const fetchConfig = async () => {
+            // Fallback por defecto (HU-15: garantiza funcionamiento si Supabase falla)
+            const DEFAULT_TEST_TYPES = [
+                { test_id: 'TDD', display_name: 'Test TDD', description: 'Test Driven Development', order_index: 1, is_active: true },
+                { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true }
+            ];
             try {
-                const { data, error: confError } = await supabase.from('test_config').select('*');
+                const { data, error: confError } = await supabase
+                    .from('test_config')
+                    .select('test_id, display_name, description, order_index, is_active')
+                    .order('order_index', { ascending: true });
                 if (confError) throw confError;
-                if (data) {
-                    const newConfig = { TDD: true, BDD: true };
-                    data.forEach(item => {
-                        newConfig[item.test_id] = item.is_active;
-                    });
+                if (data && data.length > 0) {
+                    // Construir mapa booleano para compatibilidad con HU-9 (toggle admin)
+                    const newConfig = {};
+                    data.forEach(item => { newConfig[item.test_id] = item.is_active; });
                     setTestConfig(newConfig);
+                    // HU-15: Guardar arreglo completo con metadatos de presentación
+                    setTestTypes(data.map(item => ({
+                        test_id: item.test_id,
+                        display_name: item.display_name || `Test ${item.test_id}`,
+                        description: item.description || '',
+                        order_index: item.order_index ?? 99,
+                        is_active: item.is_active
+                    })));
+                } else {
+                    // Sin datos en BD: usar fallback y registrar advertencia
+                    console.warn('[HU-15] Sin tipos de test en BD. Usando fallback local.');
+                    setTestTypes(DEFAULT_TEST_TYPES);
                 }
             } catch (err) {
-                console.error("Config fetch error:", err);
+                console.error('[HU-15] Error al cargar test_config. Usando fallback local.', err);
+                setTestTypes(DEFAULT_TEST_TYPES);
             }
         };
         
@@ -642,18 +666,26 @@ export default function App() {
                             >
                                 Dashboard
                             </button>
-                            <button onClick={() => handleStartTest('TDD')}
-                                disabled={!isAdmin && !testConfig['TDD']}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'TDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:text-slate-400`}
-                            >
-                                {(!isAdmin && !testConfig['TDD']) ? 'TDD (Cerrado)' : 'Test TDD'}
-                            </button>
-                            <button onClick={() => handleStartTest('BDD')}
-                                disabled={!isAdmin && !testConfig['BDD']}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${(view === 'quiz' || view === 'result') && testType === 'BDD' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:text-slate-400`}
-                            >
-                                {(!isAdmin && !testConfig['BDD']) ? 'BDD (Cerrado)' : 'Test BDD'}
-                            </button>
+                            {/* HU-15: Botones generados dinámicamente desde testTypes */}
+                            {testTypes.map(tt => {
+                                const isDisabled = !isAdmin && !tt.is_active;
+                                const isActive = (view === 'quiz' || view === 'result') && testType === tt.test_id;
+                                return (
+                                    <button
+                                        key={tt.test_id}
+                                        onClick={() => handleStartTest(tt.test_id)}
+                                        disabled={isDisabled}
+                                        title={tt.description}
+                                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                                            isActive
+                                                ? 'bg-indigo-600 text-white shadow-md'
+                                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:text-slate-400`}
+                                    >
+                                        {isDisabled ? `${tt.display_name} (Cerrado)` : tt.display_name}
+                                    </button>
+                                );
+                            })}
                         </nav>
                     )}
                 </div>

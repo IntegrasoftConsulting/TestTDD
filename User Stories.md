@@ -277,3 +277,42 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que el sistema está en modo oscuro
 - **Cuando** el administrador visualiza las gráficas de Recharts y las tablas de resultados
 - **Entonces** los colores de fondo, ejes de gráficas y bordes deben ajustarse para mantener la legibilidad y estética premium.
+
+---
+
+### HU-15: Parametrización de Tipos de Evaluación desde Supabase
+
+**Como** administrador de la plataforma
+**Quiero** que los tipos de evaluación disponibles (ej. TDD, BDD y futuros) se lean dinámicamente desde la tabla `test_config` en Supabase, incluyendo su nombre de visualización y descripción
+**Para** poder agregar o eliminar tipos de test sin necesidad de modificar el código fuente de la aplicación.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Botones de navegación generados dinámicamente (Camino Feliz)**
+- **Dado** que un usuario autenticado ha iniciado sesión
+- **Cuando** la aplicación carga el Dashboard por primera vez
+- **Entonces** los botones del menú de navegación (ej. "Test TDD", "Test BDD") deben generarse dinámicamente leyendo desde `test_config`
+- **Y** solo deben aparecer los tipos cuyo campo `is_active = true`
+- **Y** el texto del botón debe usar el campo `display_name` de la tabla en lugar de un literal hardcodeado.
+
+**Criterios de Aceptación 2: Estado inicial de testConfig derivado de Supabase**
+- **Dado** que la aplicación obtiene la lista de tipos de test desde `test_config`
+- **Cuando** se procesan los datos
+- **Entonces** el estado interno `testConfig` debe construirse dinámicamente a partir de las filas retornadas (en lugar de inicializarse como `{ TDD: true, BDD: true }`)
+- **Y** cualquier tipo nuevo insertado en `test_config` debe reflejarse automáticamente en la UI sin cambios de código.
+
+**Criterios de Aceptación 3: Fallback a tipos por defecto si Supabase no responde**
+- **Dado** que ocurre un error al consultar la tabla `test_config`
+- **Cuando** el usuario intenta acceder al Dashboard
+- **Entonces** la aplicación debe usar los tipos de test por defecto (`TDD` y `BDD` activos) como respaldo
+- **Y** debe registrar el error en consola sin bloquear la experiencia del usuario.
+
+**Criterios de Aceptación 4: Schema extendido de test_config**
+- **Dado** que la tabla `test_config` actualmente solo tiene `test_id` e `is_active`
+- **Cuando** se aplique la migración de HU-15
+- **Entonces** la tabla debe contar con los campos adicionales:
+  - `display_name` (TEXT): nombre legible para mostrar en botones (ej. `"Test TDD"`)
+  - `description` (TEXT): descripción breve del tipo de evaluación (ej. `"Test Driven Development"`)
+  - `order_index` (SMALLINT): orden de presentación de los botones en la UI
+- **Y** los registros existentes de TDD y BDD deben conservar sus datos previos, actualizados con los nuevos campos.
+
