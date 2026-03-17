@@ -355,3 +355,38 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Cuando** el administrador lo deshabilita (`is_active = false`) desde su panel de control
 - **Entonces** el botón "Test SOLID" debe desaparecer o mostrarse como bloqueado para los estudiantes
 - **Y** el comportamiento es idéntico al de los tests TDD y BDD (consistencia con HU-9 y HU-15).
+
+---
+
+### HU-17: Panel de Control de Evaluaciones Dinámico para Administradores
+
+**Como** administrador de la plataforma
+**Quiero** que el panel de control de evaluaciones en el Dashboard muestre todos los tipos de test configurados en la base de datos (no solo TDD y BDD)
+**Para** poder activar o desactivar cualquier evaluación desde una sola interfaz centralizada, y que el cambio se refleje inmediatamente en el menú de navegación de todos los usuarios.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Panel dinámico cargado desde Supabase (Camino Feliz)**
+- **Dado** que un administrador accede a su Dashboard
+- **Cuando** la sección de "Control de Evaluaciones" carga
+- **Entonces** debe mostrar una tarjeta o fila por cada tipo de test registrado en la tabla `test_config` (ej. TDD, BDD, SOLID y cualquier futuro)
+- **Y** cada fila debe incluir el `display_name`, la `description` y el estado actual (`is_active`) del test
+- **Y** el listado debe estar ordenado por `order_index`.
+
+**Criterios de Aceptación 2: Toggle activa/desactiva el test en tiempo real**
+- **Dado** que el administrador ve el panel de control de evaluaciones
+- **Cuando** activa o desactiva el interruptor (*toggle*) de un tipo de test
+- **Entonces** el sistema debe ejecutar un `UPDATE` en la tabla `test_config` actualizando el campo `is_active` del registro correspondiente
+- **Y** el botón del menú de navegación de ese test debe aparecer o desaparecer (bloquearse) en la misma sesión y en la de otros usuarios conectados, gracias al canal Realtime de Supabase ya existente.
+
+**Criterios de Aceptación 3: Indicador visual de estado en el panel**
+- **Dado** que el panel muestra la lista de evaluaciones
+- **Cuando** un test está `is_active = true`
+- **Entonces** su fila debe mostrarse con un indicador verde/activo y texto "Activo"
+- **Y** cuando `is_active = false`, el indicador debe ser gris/rojo y mostrar "Inactivo", sin desaparecer del panel del admin.
+
+**Criterios de Aceptación 4: Restricción de acceso a estudiantes**
+- **Dado** que un usuario con rol estándar (estudiante) está en su Dashboard
+- **Cuando** navega por la interfaz
+- **Entonces** no debe visualizar ni tener acceso al panel de control de evaluaciones
+- **Y** los tests desactivados simplemente no deben aparecer como opción en su menú de navegación.
