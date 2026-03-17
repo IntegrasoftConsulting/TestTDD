@@ -166,8 +166,8 @@ export default function App() {
         const saved = localStorage.getItem('mastery_dark_mode');
         return saved ? JSON.parse(saved) : false;
     }); // HU-13: Modo Oscuro
-
-    const QUESTIONS = testType === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
+    const [questions, setQuestions] = useState([]); // HU-14: Preguntas cargadas desde Supabase
+    const [questionsLoading, setQuestionsLoading] = useState(false); // HU-14: Spinner de carga de preguntas
 
     // --- AUTH ---
     useEffect(() => {
@@ -370,19 +370,55 @@ export default function App() {
         }
     };
 
-    const handleStartTest = (type) => {
+    // HU-14: Carga preguntas desde Supabase; si falla usa el fallback local
+    const handleStartTest = async (type) => {
         setTestType(type);
         setCurrentQuestion(0);
         setAnswers([]);
         setError(null);
+        setQuestionsLoading(true);
         setView('quiz');
+
+        const fallback = type === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
+
+        if (supabase) {
+            try {
+                const { data, error: qErr } = await supabase
+                    .from('questions')
+                    .select('order_index, question_text, options, correct_option_index')
+                    .eq('test_type', type)
+                    .eq('is_active', true)
+                    .order('order_index', { ascending: true });
+
+                if (qErr) throw qErr;
+
+                if (data && data.length > 0) {
+                    // Normalizar al formato interno { question, options, correct }
+                    setQuestions(data.map(q => ({
+                        question: q.question_text,
+                        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
+                        correct: q.correct_option_index
+                    })));
+                } else {
+                    console.warn(`[HU-14] Sin preguntas en BD para ${type}. Usando fallback local.`);
+                    setQuestions(fallback.map(q => ({ question: q.question, options: q.options, correct: q.correct })));
+                }
+            } catch (err) {
+                console.error('[HU-14] Error al cargar preguntas desde Supabase. Usando fallback local.', err);
+                setQuestions(fallback.map(q => ({ question: q.question, options: q.options, correct: q.correct })));
+            }
+        } else {
+            setQuestions(fallback.map(q => ({ question: q.question, options: q.options, correct: q.correct })));
+        }
+
+        setQuestionsLoading(false);
     };
 
     const handleAnswer = (optionIndex) => {
         const newAnswers = [...answers, optionIndex];
         setAnswers(newAnswers);
 
-        if (currentQuestion < QUESTIONS.length - 1) {
+        if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
         } else {
             processFinish(newAnswers);
@@ -392,10 +428,10 @@ export default function App() {
     const processFinish = async (finalAnswers) => {
         setIsSaving(true);
         const correctCount = finalAnswers.reduce((acc, ans, idx) => {
-            return ans === QUESTIONS[idx].correct ? acc + 1 : acc;
+            return ans === questions[idx].correct ? acc + 1 : acc;
         }, 0);
 
-        const scorePercentage = (correctCount / QUESTIONS.length) * 100;
+        const scorePercentage = (correctCount / questions.length) * 100;
         setFinalScore(scorePercentage);
 
         if (user) {
@@ -403,10 +439,10 @@ export default function App() {
             try {
                 const { error } = await supabase.from('results').insert([{
                     studentName,
-                    email, // Guardamos también el correo en la base de datos (asegúrate de que la columna exista o usar metadata si es necesario)
+                    email,
                     score: scorePercentage,
                     correctAnswers: correctCount,
-                    totalQuestions: QUESTIONS.length,
+                    totalQuestions: questions.length,
                     testType: testType,
                     uid: user.id,
                     answers: finalAnswers
@@ -672,48 +708,58 @@ export default function App() {
 
                 {view === 'quiz' && (
                     <div className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800">
-                        <div className="flex justify-between items-center mb-8">
-                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-                                Pregunta {currentQuestion + 1} / {QUESTIONS.length}
-                            </span>
-                            <span className="text-xs font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-widest">
-                                Test: {testType}
-                            </span>
-                        </div>
-                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-10 mt-[-1rem]">
-                            <div className="h-full bg-indigo-600 transition-all duration-500" style={{
-                                width: `${((currentQuestion +
-                                    1) / QUESTIONS.length) * 100}%`
-                            }}></div>
-                        </div>
-
-                        <h2 className="text-2xl font-bold mb-10 leading-tight text-slate-800 dark:text-slate-100">
-                            {QUESTIONS[currentQuestion].question}
-                        </h2>
-
-                        <div className="space-y-4">
-                            {QUESTIONS[currentQuestion].options.map((option, idx) => (
-                                <button key={idx} disabled={isSaving} onClick={() => handleAnswer(idx)}
-                                    className="w-full text-left p-5 rounded-2xl border-2 border-slate-50 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500
-              hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group flex items-start gap-4 disabled:opacity-50"
-                                >
-                                    <span
-                                        className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-black group-hover:bg-indigo-600 group-hover:text-white shrink-0 transition-colors">
-                                        {String.fromCharCode(65 + idx)}
-                                    </span>
-                                    <span
-                                        className="text-lg font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-900 dark:group-hover:text-indigo-100 pt-1 leading-snug">{option}</span>
-                                </button>
-                            ))}
-                        </div>
-                        {isSaving && (
-                            <div className="mt-8 flex items-center justify-center gap-3 text-indigo-600 font-bold">
-                                <Loader2 className="animate-spin w-5 h-5" />
-                                Guardando respuestas...
+                        {/* HU-14: Spinner mientras se cargan las preguntas desde Supabase */}
+                        {questionsLoading ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                <Loader2 className="animate-spin h-10 w-10 text-indigo-600" />
+                                <p className="text-slate-500 dark:text-slate-400 font-medium">Cargando preguntas...</p>
                             </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-center mb-8">
+                                    <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                                        Pregunta {currentQuestion + 1} / {questions.length}
+                                    </span>
+                                    <span className="text-xs font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-widest">
+                                        Test: {testType}
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-10 mt-[-1rem]">
+                                    <div className="h-full bg-indigo-600 transition-all duration-500" style={{
+                                        width: `${((currentQuestion + 1) / questions.length) * 100}%`
+                                    }}></div>
+                                </div>
+
+                                <h2 className="text-2xl font-bold mb-10 leading-tight text-slate-800 dark:text-slate-100">
+                                    {questions[currentQuestion]?.question}
+                                </h2>
+
+                                <div className="space-y-4">
+                                    {questions[currentQuestion]?.options.map((option, idx) => (
+                                        <button key={idx} disabled={isSaving} onClick={() => handleAnswer(idx)}
+                                            className="w-full text-left p-5 rounded-2xl border-2 border-slate-50 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500
+              hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group flex items-start gap-4 disabled:opacity-50"
+                                        >
+                                            <span
+                                                className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-black group-hover:bg-indigo-600 group-hover:text-white shrink-0 transition-colors">
+                                                {String.fromCharCode(65 + idx)}
+                                            </span>
+                                            <span
+                                                className="text-lg font-medium text-slate-700 dark:text-slate-300 group-hover:text-indigo-900 dark:group-hover:text-indigo-100 pt-1 leading-snug">{option}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                {isSaving && (
+                                    <div className="mt-8 flex items-center justify-center gap-3 text-indigo-600 font-bold">
+                                        <Loader2 className="animate-spin w-5 h-5" />
+                                        Guardando respuestas...
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
+
 
                 {view === 'result' && (
                     <div

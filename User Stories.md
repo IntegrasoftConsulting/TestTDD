@@ -220,6 +220,41 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Entonces** debe poder leer los comentarios más recientes para obtener feedback detallado.
 ---
 
+### HU-14: Parametrización de Preguntas de Evaluación en Supabase
+
+**Como** administrador de la plataforma
+**Quiero** gestionar las preguntas de los tests (TDD y BDD) directamente desde una tabla en Supabase
+**Para** poder actualizar, agregar o deshabilitar preguntas sin necesidad de modificar el código fuente de la aplicación.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Carga dinámica de preguntas desde la base de datos (Camino Feliz)**
+- **Dado** que un usuario autenticado inicia un test (TDD o BDD)
+- **Cuando** la vista del cuestionario carga
+- **Entonces** la aplicación debe obtener las preguntas desde la tabla `questions` en Supabase, filtradas por `test_type` (ej. `TDD` o `BDD`) y `is_active = true`
+- **Y** las preguntas deben presentarse en el orden definido por su campo `order_index`
+- **Y** el comportamiento del cuestionario debe ser idéntico al actual (progreso, selección de opción y guardado de respuestas).
+
+**Criterios de Aceptación 2: Fallback a preguntas por defecto si la BD no responde**
+- **Dado** que se produce un error al consultar la tabla `questions` de Supabase (ej. tiempo de espera agotado o política RLS incorrecta)
+- **Cuando** el usuario intenta iniciar un test
+- **Entonces** la aplicación debe usar el conjunto de preguntas hardcodeadas localmente (`QUESTIONS_TDD` / `QUESTIONS_BDD`) como respaldo
+- **Y** debe mostrar un indicador visual o mensaje en consola que señale que se están utilizando preguntas por defecto.
+
+**Criterios de Aceptación 3: Preguntas inactivas no se muestran a los estudiantes**
+- **Dado** que el administrador ha marcado el campo `is_active = false` en una o más preguntas de la tabla `questions`
+- **Cuando** un estudiante inicia un test
+- **Entonces** las preguntas inactivas no deben incluirse en el cuestionario
+- **Y** el total de preguntas del progreso (`Pregunta X de N`) debe reflejar únicamente las preguntas activas recuperadas.
+
+**Criterios de Aceptación 4: Estructura de datos completa por pregunta**
+- **Dado** que la tabla `questions` contiene filas para el test TDD y BDD
+- **Cuando** se consultan las preguntas activas de un test
+- **Entonces** cada fila debe exponer: `id`, `test_type`, `order_index`, `question_text`, `options` (arreglo JSONB de 4 textos) y `correct_option_index` (entero 0-3)
+- **Y** la columna `options` debe ser un arreglo JSONB para permitir actualizaciones sin cambios de esquema.
+
+---
+
 ### HU-13: Modo Oscuro (Dark Mode)
 
 **Como** usuario de la plataforma
