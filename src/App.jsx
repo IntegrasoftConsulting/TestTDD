@@ -21,7 +21,8 @@ import {
     Plus,
     Trash2,
     Save,
-    Edit2
+    Edit2,
+    Filter
 } from 'lucide-react';
 
 const QUESTIONS_TDD = [
@@ -828,13 +829,14 @@ export default function App() {
     };
 
     const stats = useMemo(() => {
-        if (allResults.length === 0) return { avg: 0, total: 0 };
-        const sum = allResults.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        // HU-23: Las métricas ahora siguen el filtrado dinámico (grupo y tipo de test)
+        if (filteredAnalyticsData.length === 0) return { avg: 0, total: 0 };
+        const sum = filteredAnalyticsData.reduce((acc, curr) => acc + (curr.score || 0), 0);
         return {
-            avg: (sum / allResults.length).toFixed(1),
-            total: allResults.length
+            avg: (sum / filteredAnalyticsData.length).toFixed(1),
+            total: filteredAnalyticsData.length
         };
-    }, [allResults]);
+    }, [filteredAnalyticsData]);
 
     // --- ANALYTICS PROCESSING (HU-8 + HU-20) ---
     const filteredAnalyticsData = useMemo(() => {
@@ -1517,6 +1519,38 @@ export default function App() {
 
                 {view === 'dashboard' && (
                     <div className="space-y-8 animate-in fade-in duration-500">
+                        {/* HU-23: Unificación de filtro de grupo al inicio del dashboard */}
+                        {isAdmin && groups.length > 0 && (
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                                        <Filter className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Filtro de Visualización</p>
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-100">Filtrar por Grupo</h4>
+                                    </div>
+                                </div>
+                                <select 
+                                    value={groupAnalyticsFilter}
+                                    onChange={(e) => {
+                                        const gid = e.target.value;
+                                        setGroupAnalyticsFilter(gid);
+                                        if (gid !== 'ALL') {
+                                            setSelectedGroupId(gid);
+                                            fetchGroupDetails(gid); // Asegurar que groupMembers se actualice para el filtrado
+                                        }
+                                    }}
+                                    className="w-full md:w-64 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                >
+                                    <option value="ALL">Todos los grupos</option>
+                                    {groups.map(g => (
+                                        <option key={g.group_id} value={g.group_id}>{g.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-6">
                                 <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl">
@@ -1572,25 +1606,6 @@ export default function App() {
                                             </div>
                                         )}
                                         <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
-                                            {/* HU-20: Filtro de grupo para analítica (Solo visible para Admin) */}
-                                            {isAdmin && groups.length > 0 && (
-                                                <div className="mr-4 flex items-center">
-                                                    <select 
-                                                        value={groupAnalyticsFilter}
-                                                        onChange={(e) => {
-                                                            const gid = e.target.value;
-                                                            setGroupAnalyticsFilter(gid);
-                                                            if (gid !== 'ALL') setSelectedGroupId(gid);
-                                                        }}
-                                                        className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-indigo-500 transition-all"
-                                                    >
-                                                        <option value="ALL">Sin filtro de grupo</option>
-                                                        {groups.map(g => (
-                                                            <option key={g.group_id} value={g.group_id}>{g.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
                                             {/* HU-18: Filtros de analítica dinámicos desde testTypes */}
                                             {[{ test_id: 'TODO', display_name: 'Todos' }, ...testTypes].map(f => (
                                                 <button
@@ -1814,17 +1829,17 @@ export default function App() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                        {allResults.length === 0 ? (
+                                        {filteredAnalyticsData.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="px-8 py-20 text-center">
                                                     <div className="flex flex-col items-center opacity-30">
                                                         <ClipboardCheck className="w-16 h-16 mb-4" />
-                                                        <p className="text-lg font-bold uppercase tracking-tighter">Esperando el primer envío...</p>
+                                                        <p className="text-lg font-bold uppercase tracking-tighter">No hay resultados para este filtro...</p>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ) : (
-                                            allResults.map((res) => (
+                                            filteredAnalyticsData.map((res) => (
                                                 <tr key={res.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                                                     <td className="px-8 py-6">
                                                         <div className="font-bold text-slate-800 dark:text-slate-200">{res.studentName}</div>

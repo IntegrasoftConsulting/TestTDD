@@ -543,3 +543,30 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que el usuario se auto-registra en un grupo
 - **Cuando** accede al Dashboard
 - **Entonces** debe visualizar únicamente los tests habilitados para ese grupo (según `group_test_config`) o la configuración global si el grupo no tiene restricciones específicas.
+---
+ 
+### HU-22: Descentralización de Controles (Configuración por Grupo)
+ 
+**Como** administrador
+**Quiero** gestionar la disponibilidad de evaluaciones y encuestas de forma independiente para cada grupo
+**Para** poder personalizar la experiencia de evaluación según las necesidades específicas de cada cohorte.
+ 
+#### Criterios de Aceptación
+- **Criterio de Aceptación 1:** Los controles globales de evaluaciones y encuestas se eliminan del Dashboard principal.
+- **Criterio de Aceptación 2:** En la vista de detalle de cada grupo, el administrador puede habilitar o deshabilitar cada test y cada encuesta.
+- **Criterio de Aceptación 3:** Las configuraciones del grupo tienen precedencia sobre las globales para los estudiantes miembros.
+- **Criterio de Aceptación 4:** Los cambios se reflejan en tiempo real vía Supabase Realtime para todos los usuarios conectados.
+ 
+---
+ 
+### HU-23: Unificación de Filtros de Grupo en Dashboard Admin
+ 
+**Como** administrador
+**Quiero** tener un único selector de grupo en el dashboard de administrador
+**Para** que las gráficas de analítica y la tabla de resultados históricos se filtren simultáneamente bajo el mismo criterio de grupo.
+ 
+#### Criterios de Aceptación
+- **Criterio de Aceptación 1:** Existe un único componente de selección de grupo en la parte superior del Dashboard de administrador.
+- **Criterio de Aceptación 2:** Al seleccionar un grupo, tanto las gráficas de tendencias/distribución como la tabla de "Resultados Recientes" deben mostrar únicamente los datos de los miembros de dicho grupo.
+- **Criterio de Aceptación 3:** Al seleccionar "Todos los grupos", ambas secciones deben mostrar la información consolidada de toda la plataforma.
+- **Criterio de Aceptación 4:** El filtro de grupo debe persistir o coordinarse correctamente con el filtro por tipo de test.
