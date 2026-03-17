@@ -46,17 +46,15 @@ function App() {
         <div className={`min-h-screen transition-colors duration-500 pb-20 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900/50 ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
             <Header 
                 studentName={studentName}
+                isLoggedIn={isLoggedIn}
                 isAdmin={isAdmin}
-                setIsLoggedIn={setIsLoggedIn}
-                setStudentName={setStudentName}
-                setEmail={setEmail}
-                setIsAdmin={setIsAdmin}
+                view={view}
+                testType={testType}
                 setView={setView}
                 setDarkMode={setDarkMode}
                 darkMode={darkMode}
                 testTypes={testTypes}
-                groupTestConfig={groupTestConfig}
-                surveyConfig={surveyConfig}
+                handleStartTest={handleStartTest}
             />
 
             <main className="container mx-auto px-4 max-w-6xl pt-12">
@@ -67,10 +65,11 @@ function App() {
                         email={email}
                         setEmail={setEmail}
                         groups={groups}
-                        selectedGroupId={selectedGroupId}
-                        setSelectedGroupId={setSelectedGroupId}
+                        loginGroupId={loginGroupId}
+                        setLoginGroupId={setLoginGroupId}
                         handleLogin={handleLogin}
-                        isSaving={isSaving}
+                        isAdmin={isAdmin}
+                        setError={setError}
                     />
                 )}
 
@@ -94,7 +93,7 @@ function App() {
                         trendsData={trendsData}
                         darkMode={darkMode}
                         surveyMetrics={surveyMetrics}
-                        questionDetailData={null} // O pasar lógica si es necesario
+                        questionDetailData={questionDetailData}
                         filteredAnalyticsData={filteredAnalyticsData}
                     />
                 )}
