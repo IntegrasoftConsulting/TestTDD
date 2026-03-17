@@ -70,6 +70,7 @@ function App() {
                         setLoginGroupId={setLoginGroupId}
                         handleLogin={handleLogin}
                         isAdmin={isAdmin}
+                        error={error}
                         setError={setError}
                     />
                 )}
