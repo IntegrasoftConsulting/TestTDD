@@ -519,7 +519,15 @@ export default function App() {
                 setIsAdmin(true);
             } else {
                 setIsAdmin(false);
-                // HU-20: Si no es admin, verificar si pertenece a un grupo
+                
+                // HU-21: Validar que se haya seleccionado un grupo
+                if (!loginGroupId) {
+                    setError("Por favor, selecciona el grupo al que perteneces.");
+                    setIsSaving(false);
+                    return;
+                }
+
+                // HU-20: Verificar si pertenece a un grupo
                 const { data: memberRow, error: mErr } = await supabase
                     .from('group_members')
                     .select('group_id')
