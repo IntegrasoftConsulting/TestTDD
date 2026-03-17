@@ -511,3 +511,35 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
   - `group_members` — `id` (UUID PK), `group_id` (FK → groups), `email` (TEXT NOT NULL), `created_at`, UNIQUE(`group_id`, `email`)
   - `group_test_config` — `id` (UUID PK), `group_id` (FK → groups), `test_id` (FK → test_config), `is_active` (BOOLEAN NOT NULL DEFAULT true), UNIQUE(`group_id`, `test_id`)
 - **Y** las políticas RLS deben permitir lectura pública y escritura solo a roles autenticados con perfil de administrador.
+
+---
+
+### HU-21: Selección de Grupo y Auto-registro en Login
+
+**Como** participante de la plataforma
+**Quiero** poder seleccionar mi grupo desde una lista desplegable al iniciar sesión
+**Para** quedar registrado automáticamente en mi cohorte o equipo correspondiente sin intervención manual del administrador.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Selector de grupo en el formulario de login**
+- **Dado** que un usuario accede a la pantalla de login
+- **Cuando** no es un administrador
+- **Entonces** debe visualizar un selector con la lista de todos los grupos activos disponibles en la plataforma (tabla `groups`)
+- **Y** el selector es obligatorio para iniciar sesión como estudiante.
+
+**Criterios de Aceptación 2: Auto-registro del miembro en el grupo**
+- **Dado** que un estudiante ingresa su nombre, email y selecciona un grupo
+- **Cuando** hace clic en "Iniciar Sesión"
+- **Entonces** el sistema debe verificar si ya existe una relación en `group_members` para ese email y ese grupo
+- **Y** si no existe, debe crear el registro automáticamente antes de redirigir al Dashboard.
+
+**Criterios de Aceptación 3: Exención para administradores**
+- **Dado** que un usuario ingresa un email registrado en `admin_users`
+- **Cuando** inicia sesión
+- **Entonces** el sistema ignora la selección del grupo (o permite iniciar sesión sin seleccionarlo) y le otorga acceso total con rol de administrador.
+
+**Criterios de Aceptación 4: Consistencia de configuración de tests**
+- **Dado** que el usuario se auto-registra en un grupo
+- **Cuando** accede al Dashboard
+- **Entonces** debe visualizar únicamente los tests habilitados para ese grupo (según `group_test_config`) o la configuración global si el grupo no tiene restricciones específicas.

@@ -190,10 +190,11 @@ export default function App() {
     const [userGroupId, setUserGroupId] = useState(null);         // Grupo del estudiante logueado
     const [groupView, setGroupView] = useState('list');            // 'list' | 'detail'
     const [isGroupsLoading, setIsGroupsLoading] = useState(false);
+    const [loginGroupId, setLoginGroupId] = useState(''); // HU-21: Grupo seleccionado en el login por el estudiante
 
     // --- HU-20: FUNCIONES DE FETCH EN NIVEL DE COMPONENTE ---
     const fetchGroups = async () => {
-        if (!isAdmin) return;
+        // HU-21: Permitir que los grupos se carguen sin ser admin (para el login)
         setIsGroupsLoading(true);
         try {
             const { data: groupsData, error: gErr } = await supabase
@@ -380,6 +381,7 @@ export default function App() {
         // Bajamos datos fresquitos
         fetchConfig();
         fetchSurveyConfig();
+        if (view === 'login') fetchGroups(); // HU-21: Cargar grupos para el selector de login
         if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
             if (isAdmin) {
@@ -497,6 +499,9 @@ export default function App() {
         setError(null);
 
         try {
+            // Cargar grupos disponibles para el login
+            fetchGroups();
+
             // Verificar si el correo pertenece a un administrador consultando la tabla de Supabase
             const { data, error: adminError } = await supabase
                 .from('admin_users')
@@ -545,6 +550,31 @@ export default function App() {
                             groupConfig.forEach(c => newConfig[c.test_id] = c.is_active);
                             return newConfig;
                         });
+                    }
+                }
+
+                // HU-21: Auto-registro del estudiante en el grupo seleccionado
+                if (loginGroupId) {
+                    const { error: regErr } = await supabase
+                        .from('group_members')
+                        .upsert([{ group_id: loginGroupId, email: email }], { onConflict: 'group_id,email' });
+                    
+                    if (regErr) console.warn("Error auto-registrando miembro en grupo:", regErr.message);
+                    
+                    // Asegurar que userGroupId y la config del grupo se apliquen si es un registro nuevo
+                    setUserGroupId(loginGroupId);
+                    const { data: gConfig } = await supabase
+                        .from('group_test_config')
+                        .select('test_id, is_active')
+                        .eq('group_id', loginGroupId);
+                    
+                    if (gConfig && gConfig.length > 0) {
+                        const override = {};
+                        gConfig.forEach(c => override[c.test_id] = c.is_active);
+                        setTestTypes(prev => prev.map(t => ({
+                            ...t,
+                            is_active: override[t.test_id] !== undefined ? override[t.test_id] : t.is_active
+                        })));
                     }
                 }
             }
@@ -1036,6 +1066,25 @@ export default function App() {
                                     onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                                 />
                             </div>
+
+                            {/* HU-21: Selector de grupos para estudiantes */}
+                            {!isAdmin && groups.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1" htmlFor="loginGroup">Selecciona tu grupo</label>
+                                    <select 
+                                        id="loginGroup"
+                                        className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 focus:border-indigo-500 outline-none transition-all text-md dark:text-slate-100"
+                                        value={loginGroupId}
+                                        onChange={(e) => setLoginGroupId(e.target.value)}
+                                    >
+                                        <option value="">-- Elige tu grupo --</option>
+                                        {groups.map(g => (
+                                            <option key={g.group_id} value={g.group_id}>{g.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-slate-400 mt-2 italic ml-1">* Si no estás registrado en el grupo, se hará automáticamente al ingresar.</p>
+                                </div>
+                            )}
                         </div>
 
                         <button onClick={handleLogin} disabled={isSaving}
