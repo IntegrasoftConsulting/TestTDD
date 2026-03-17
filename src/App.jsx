@@ -39,6 +39,7 @@ function App() {
         handleLogin, handleCreateGroup, handleAnswer, 
         handleToggleGroupTest, handleToggleGroupSurvey,
         handleAddMember, handleDeleteMember, handleSurveySubmit,
+        handleStartTest, testType,
         fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter
     } = useAppLogic();
 
