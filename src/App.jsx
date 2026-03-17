@@ -573,9 +573,8 @@ export default function App() {
             
             setNewGroupForm({ name: '', description: '' });
             setNewGroupModal(false);
-            // Refrescar lista de grupos (se podría optimizar agregando al estado local)
-            // fetchGroups() está en el useEffect del dashboard, pero aquí estamos en view 'groups'
-            // Definiremos una función fetchGroups accesible
+            // Refrescar lista de grupos inmediatamente
+            fetchGroups();
         } catch (err) {
             setError(`Error al crear grupo: ${err.message}`);
         } finally {
@@ -591,14 +590,9 @@ export default function App() {
                 .insert([{ group_id: selectedGroupId, email: emailToAdd }]);
             
             if (error) throw error;
-            // Refrescar detalles para ver el nuevo miembro
-            // fetchGroupDetails ya se dispara por el selector
-            setSelectedGroupId(prev => {
-                const current = prev;
-                setSelectedGroupId(null);
-                setTimeout(() => setSelectedGroupId(current), 10);
-                return prev;
-            });
+            // Refrescar detalles y conteos en la lista
+            fetchGroupDetails(selectedGroupId);
+            fetchGroups();
         } catch (err) {
             setError(`Error al agregar miembro: ${err.message}`);
         }
@@ -608,7 +602,9 @@ export default function App() {
         try {
             const { error } = await supabase.from('group_members').delete().eq('id', memberId);
             if (error) throw error;
+            // Actualizar estado local y refrescar conteos
             setGroupMembers(prev => prev.filter(m => m.id !== memberId));
+            fetchGroups();
         } catch (err) {
             setError(`Error al eliminar miembro: ${err.message}`);
         }
