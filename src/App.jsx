@@ -1616,8 +1616,8 @@ export default function App() {
                                             </div>
                                         )}
                                         <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
-                                            {/* HU-20: Filtro de grupo para analítica */}
-                                            {groups.length > 0 && (
+                                            {/* HU-20: Filtro de grupo para analítica (Solo visible para Admin) */}
+                                            {isAdmin && groups.length > 0 && (
                                                 <div className="mr-4 flex items-center">
                                                     <select 
                                                         value={groupAnalyticsFilter}
