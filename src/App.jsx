@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import {
     ChevronRight,
+    ChevronLeft,
     CheckCircle2,
     Trophy,
     Users,
@@ -16,7 +17,11 @@ import {
     Star,
     MessageSquare,
     Sun,
-    Moon
+    Moon,
+    Plus,
+    Trash2,
+    Save,
+    Edit2
 } from 'lucide-react';
 
 const QUESTIONS_TDD = [
@@ -174,6 +179,18 @@ export default function App() {
     const [questionsLoading, setQuestionsLoading] = useState(false); // HU-14: Spinner de carga de preguntas
     const [questionsCache, setQuestionsCache] = useState({}); // HU-18: Cache de preguntas por test_type para analítica
 
+    // --- HU-20: ESTADOS DE GRUPOS ---
+    const [groups, setGroups] = useState([]);                   // Lista de grupos (admin)
+    const [selectedGroupId, setSelectedGroupId] = useState(null); // Grupo en detalle (admin)
+    const [groupTestConfig, setGroupTestConfig] = useState({});   // { test_id: is_active } del grupo seleccionado
+    const [groupMembers, setGroupMembers] = useState([]);          // Miembros del grupo seleccionado
+    const [groupAnalyticsFilter, setGroupAnalyticsFilter] = useState('ALL'); // 'ALL' | group_id
+    const [newGroupModal, setNewGroupModal] = useState(false);    // Mostrar modal de creación
+    const [newGroupForm, setNewGroupForm] = useState({ name: '', description: '' });
+    const [userGroupId, setUserGroupId] = useState(null);         // Grupo del estudiante logueado
+    const [groupView, setGroupView] = useState('list');            // 'list' | 'detail'
+    const [isGroupsLoading, setIsGroupsLoading] = useState(false);
+
     // --- AUTH ---
     useEffect(() => {
         const initAuth = async () => {
@@ -307,10 +324,70 @@ export default function App() {
         // Bajamos datos fresquitos
         fetchConfig();
         fetchSurveyConfig();
+        const fetchGroups = async () => {
+            if (!isAdmin) return;
+            setIsGroupsLoading(true);
+            try {
+                // Obtenemos grupos y count de miembros manualmente (o via view si existiera)
+                const { data: groupsData, error: gErr } = await supabase
+                    .from('groups')
+                    .select('*')
+                    .order('name');
+                
+                if (gErr) throw gErr;
+
+                // Para cada grupo, contar miembros
+                const groupsWithCounts = await Promise.all((groupsData || []).map(async (g) => {
+                    const { count, error: cErr } = await supabase
+                        .from('group_members')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('group_id', g.group_id);
+                    return { ...g, memberCount: count || 0 };
+                }));
+
+                setGroups(groupsWithCounts);
+            } catch (err) {
+                console.error("Error fetching groups:", err);
+            } finally {
+                setIsGroupsLoading(false);
+            }
+        };
+
+        const fetchGroupDetails = async (groupId) => {
+            if (!isAdmin) return;
+            try {
+                // 1. Config de tests del grupo
+                const { data: configData } = await supabase
+                    .from('group_test_config')
+                    .select('test_id, is_active')
+                    .eq('group_id', groupId);
+                
+                const configMap = {};
+                (configData || []).forEach(c => configMap[c.test_id] = c.is_active);
+                setGroupTestConfig(configMap);
+
+                // 2. Miembros del grupo
+                const { data: membersData } = await supabase
+                    .from('group_members')
+                    .select('*')
+                    .eq('group_id', groupId)
+                    .order('email');
+                
+                setGroupMembers(membersData || []);
+            } catch (err) {
+                console.error("Error fetching group details:", err);
+            }
+        };
+
+        useEffect(() => {
+            if (selectedGroupId) fetchGroupDetails(selectedGroupId);
+        }, [selectedGroupId]);
+
         if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
             if (isAdmin) {
                 fetchSurveyResults();
+                fetchGroups();
                 // HU-18: Cargar todas las preguntas para analítica al abrir el dashboard
                 (async () => {
                     try {
@@ -368,11 +445,36 @@ export default function App() {
                 if (isAdmin) fetchSurveyResults();
             }).subscribe();
 
+        // HU-20: Canales para Grupos
+        const channelGroups = supabase
+            .channel('public:groups')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, payload => {
+                if (isAdmin) fetchGroups();
+            }).subscribe();
+
+        const channelGroupMembers = supabase
+            .channel('public:group_members')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, payload => {
+                if (isAdmin) {
+                    fetchGroups();
+                    if (selectedGroupId) fetchGroupDetails(selectedGroupId);
+                }
+            }).subscribe();
+
+        const channelGroupTestConfig = supabase
+            .channel('public:group_test_config')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_test_config' }, payload => {
+                if (isAdmin && selectedGroupId) fetchGroupDetails(selectedGroupId);
+            }).subscribe();
+
         return () => {
             supabase.removeChannel(channelResults);
             supabase.removeChannel(channelConfig);
             supabase.removeChannel(channelSurveyConfig);
             supabase.removeChannel(channelSurveyResponses);
+            supabase.removeChannel(channelGroups);
+            supabase.removeChannel(channelGroupMembers);
+            supabase.removeChannel(channelGroupTestConfig);
         };
     }, [user, isLoggedIn, email, isAdmin, view]);
 
@@ -415,6 +517,39 @@ export default function App() {
                 setIsAdmin(true);
             } else {
                 setIsAdmin(false);
+                // HU-20: Si no es admin, verificar si pertenece a un grupo
+                const { data: memberRow, error: mErr } = await supabase
+                    .from('group_members')
+                    .select('group_id')
+                    .eq('email', email)
+                    .maybeSingle();
+                
+                if (memberRow) {
+                    setUserGroupId(memberRow.group_id);
+                    // Cargar configuración de tests específica del grupo
+                    const { data: groupConfig, error: gcErr } = await supabase
+                        .from('group_test_config')
+                        .select('test_id, is_active')
+                        .eq('group_id', memberRow.group_id);
+                    
+                    if (!gcErr && groupConfig && groupConfig.length > 0) {
+                        // Crear un mapa de override para testTypes
+                        const override = {};
+                        groupConfig.forEach(c => override[c.test_id] = c.is_active);
+                        
+                        setTestTypes(prev => prev.map(t => ({
+                            ...t,
+                            is_active: override[t.test_id] !== undefined ? override[t.test_id] : t.is_active
+                        })));
+
+                        // También actualizar testConfig para la nav
+                        setTestConfig(prev => {
+                            const newConfig = { ...prev };
+                            groupConfig.forEach(c => newConfig[c.test_id] = c.is_active);
+                            return newConfig;
+                        });
+                    }
+                }
             }
 
             setIsLoggedIn(true);
@@ -424,6 +559,80 @@ export default function App() {
             setError("Ocurrió un error al iniciar sesión. Por favor intenta de nuevo.");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    // --- HU-20: FUNCIONES DE GESTIÓN DE GRUPOS ---
+    const handleCreateGroup = async () => {
+        if (!newGroupForm.name.trim()) return;
+        setIsSaving(true);
+        try {
+            const { data, error } = await supabase
+                .from('groups')
+                .insert([newGroupForm])
+                .select();
+            
+            if (error) throw error;
+            
+            setNewGroupForm({ name: '', description: '' });
+            setNewGroupModal(false);
+            // Refrescar lista de grupos (se podría optimizar agregando al estado local)
+            // fetchGroups() está en el useEffect del dashboard, pero aquí estamos en view 'groups'
+            // Definiremos una función fetchGroups accesible
+        } catch (err) {
+            setError(`Error al crear grupo: ${err.message}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleAddMember = async (emailToAdd) => {
+        if (!selectedGroupId || !emailToAdd) return;
+        try {
+            const { error } = await supabase
+                .from('group_members')
+                .insert([{ group_id: selectedGroupId, email: emailToAdd }]);
+            
+            if (error) throw error;
+            // Refrescar detalles para ver el nuevo miembro
+            // fetchGroupDetails ya se dispara por el selector
+            setSelectedGroupId(prev => {
+                const current = prev;
+                setSelectedGroupId(null);
+                setTimeout(() => setSelectedGroupId(current), 10);
+                return prev;
+            });
+        } catch (err) {
+            setError(`Error al agregar miembro: ${err.message}`);
+        }
+    };
+
+    const handleDeleteMember = async (memberId) => {
+        try {
+            const { error } = await supabase.from('group_members').delete().eq('id', memberId);
+            if (error) throw error;
+            setGroupMembers(prev => prev.filter(m => m.id !== memberId));
+        } catch (err) {
+            setError(`Error al eliminar miembro: ${err.message}`);
+        }
+    };
+
+    const handleToggleGroupTest = async (testId, currentStatus) => {
+        if (!selectedGroupId) return;
+        const newStatus = !currentStatus;
+        
+        // Optimista
+        setGroupTestConfig(prev => ({ ...prev, [testId]: newStatus }));
+
+        try {
+            const { error } = await supabase
+                .from('group_test_config')
+                .upsert({ group_id: selectedGroupId, test_id: testId, is_active: newStatus }, { onConflict: 'group_id,test_id' });
+            
+            if (error) throw error;
+        } catch (err) {
+            setGroupTestConfig(prev => ({ ...prev, [testId]: currentStatus }));
+            setError(`Error al actualizar config de grupo: ${err.message}`);
         }
     };
 
@@ -557,11 +766,24 @@ export default function App() {
         };
     }, [allResults]);
 
-    // --- ANALYTICS PROCESSING (HU-8) ---
+    // --- ANALYTICS PROCESSING (HU-8 + HU-20) ---
     const filteredAnalyticsData = useMemo(() => {
-        if (analyticsFilter === 'TODO') return allResults;
-        return allResults.filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
-    }, [allResults, analyticsFilter]);
+        let data = analyticsFilter === 'TODO' ? allResults : allResults.filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
+        
+        // HU-20: Filtrado por grupo
+        if (groupAnalyticsFilter !== 'ALL') {
+            // El groupAnalyticsFilter es el group_id. Necesitamos los emails de ese grupo.
+            // Para simplificar, usaremos los groupMembers si el filtro es el grupo seleccionado actualmente,
+            // pero para una solución robusta, el filtro debería disparar un fetch de emails de ese grupo.
+            // Por ahora, asumimos que groupMembers tiene los miembros del grupo filtrado si el admin está viéndolo,
+            // o implementamos una lógica de filtrado directo por group_id si el resultado tuviera esa info.
+            // Como 'results' no tiene group_id, usamos el conjunto de emails.
+            const memberEmails = new Set(groupMembers.map(m => m.email));
+            data = data.filter(r => memberEmails.has(r.email));
+        }
+        
+        return data;
+    }, [allResults, analyticsFilter, groupAnalyticsFilter, groupMembers]);
 
     const passRateData = useMemo(() => {
         let ranges = {
@@ -773,6 +995,13 @@ export default function App() {
                                     </button>
                                 );
                             })}
+                            {isAdmin && (
+                                <button onClick={() => { setView('groups'); setGroupView('list'); }}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === 'groups' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                >
+                                    Grupos
+                                </button>
+                            )}
                         </nav>
                     )}
                 </div>
@@ -822,6 +1051,149 @@ export default function App() {
                                 <Loader2 className="animate-spin w-5 h-5" /> : 'Iniciar Sesión'}
                             <ChevronRight className="w-5 h-5" />
                         </button>
+                    </div>
+                )}
+
+                {view === 'groups' && isAdmin && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {groupView === 'list' ? (
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                                    <div>
+                                        <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                            <Users className="text-indigo-600 dark:text-indigo-400" /> Gestión de Grupos
+                                        </h3>
+                                        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">Total: {groups.length} grupos</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setNewGroupModal(true)}
+                                        className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none"
+                                    >
+                                        <Plus className="w-4 h-4" /> Nuevo Grupo
+                                    </button>
+                                </div>
+                                <div className="p-8">
+                                    {isGroupsLoading ? (
+                                        <div className="flex justify-center py-12"><Loader2 className="animate-spin h-8 w-8 text-indigo-500" /></div>
+                                    ) : groups.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                                <Users className="w-8 h-8" />
+                                            </div>
+                                            <p className="text-slate-400 font-medium">No hay grupos creados todavía.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {groups.map(g => (
+                                                <div key={g.group_id} className="group p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all cursor-pointer bg-white dark:bg-slate-900"
+                                                    onClick={() => { setSelectedGroupId(g.group_id); setGroupView('detail'); }}
+                                                >
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-black text-slate-800 dark:text-slate-100">{g.name}</h4>
+                                                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest">
+                                                            {g.memberCount} miembros
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{g.description || 'Sin descripción'}</p>
+                                                    <div className="mt-4 flex justify-end">
+                                                        <ChevronRight className="w-5 h-5 text-indigo-500 group-hover:translate-x-1 transition-transform" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                                    <div className="flex items-center gap-4">
+                                        <button onClick={() => setGroupView('list')} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-all"><ChevronLeft /></button>
+                                        <div>
+                                            <h3 className="font-black text-xl text-slate-800 dark:text-slate-100">{groups.find(g => g.group_id === selectedGroupId)?.name}</h3>
+                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Detalle del Grupo</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    <div className="lg:col-span-2 space-y-8">
+                                        <section>
+                                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <ClipboardCheck className="w-4 h-4" /> Evaluaciones del Grupo
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {testTypes.map(tt => {
+                                                    const isActive = groupTestConfig[tt.test_id] ?? tt.is_active;
+                                                    return (
+                                                        <button key={tt.test_id} onClick={() => handleToggleGroupTest(tt.test_id, isActive)}
+                                                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${isActive ? 'border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-300' : 'border-slate-100 dark:border-slate-800 text-slate-400 opacity-60'}`}
+                                                        >
+                                                            <span className="font-bold text-sm">{tt.display_name}</span>
+                                                            <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-indigo-600 animate-pulse' : 'bg-slate-300'}`}></div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 mt-2 italic">* Los cambios aquí sobreescriben la configuración global para este grupo.</p>
+                                        </section>
+
+                                        <section>
+                                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <User className="w-4 h-4" /> Miembros
+                                            </h4>
+                                            <div className="flex gap-2 mb-4">
+                                                <input type="email" id="newMemberEmail" placeholder="Email del participante" className="flex-1 p-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none text-sm dark:text-slate-100 focus:border-indigo-500" />
+                                                <button onClick={() => { const el = document.getElementById('newMemberEmail'); handleAddMember(el.value); el.value = ''; }} className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all"><Plus /></button>
+                                            </div>
+                                            <div className="bg-slate-50 dark:bg-slate-800/30 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800">
+                                                {groupMembers.length === 0 ? <p className="p-8 text-center text-slate-400 text-sm">Sin miembros registrados.</p> : (
+                                                    <table className="w-full text-left text-sm">
+                                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                            {groupMembers.map(m => (
+                                                                <tr key={m.id} className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10">
+                                                                    <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">{m.email}</td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <button onClick={() => handleDeleteMember(m.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                )}
+                                            </div>
+                                        </section>
+                                    </div>
+                                    <div className="space-y-6">
+                                        <div className="bg-indigo-900 text-indigo-100 p-6 rounded-2xl relative overflow-hidden">
+                                            <Users className="absolute -bottom-4 -right-4 w-24 h-24 text-white/5" />
+                                            <div className="relative z-10">
+                                                <p className="text-xs font-black uppercase tracking-widest opacity-60 mb-1">Información</p>
+                                                <p className="text-sm font-medium leading-relaxed">{groups.find(g => g.group_id === selectedGroupId)?.description || 'Sin descripción adicional para este grupo.'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal Creación Grupo */}
+                        {newGroupModal && (
+                            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
+                                    <h3 className="text-xl font-black mb-6 flex items-center gap-2">Nuevo Grupo</h3>
+                                    <div className="space-y-4 mb-8">
+                                        <input type="text" placeholder="Nombre completo del grupo" className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 outline-none text-md focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100" value={newGroupForm.name} onChange={e => setNewGroupForm({...newGroupForm, name: e.target.value})} />
+                                        <textarea placeholder="Descripción (opcional)" rows="3" className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 outline-none text-md focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100" value={newGroupForm.description} onChange={e => setNewGroupForm({...newGroupForm, description: e.target.value})} />
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setNewGroupModal(false)} className="flex-1 py-4 font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">Cancelar</button>
+                                        <button onClick={handleCreateGroup} disabled={isSaving} className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                                            {isSaving ? <Loader2 className="animate-spin w-5 h-5" /> : 'Crear Grupo'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1202,6 +1574,25 @@ export default function App() {
                                             </div>
                                         )}
                                         <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
+                                            {/* HU-20: Filtro de grupo para analítica */}
+                                            {groups.length > 0 && (
+                                                <div className="mr-4 flex items-center">
+                                                    <select 
+                                                        value={groupAnalyticsFilter}
+                                                        onChange={(e) => {
+                                                            const gid = e.target.value;
+                                                            setGroupAnalyticsFilter(gid);
+                                                            if (gid !== 'ALL') setSelectedGroupId(gid);
+                                                        }}
+                                                        className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-indigo-500 transition-all"
+                                                    >
+                                                        <option value="ALL">Sin filtro de grupo</option>
+                                                        {groups.map(g => (
+                                                            <option key={g.group_id} value={g.group_id}>{g.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                             {/* HU-18: Filtros de analítica dinámicos desde testTypes */}
                                             {[{ test_id: 'TODO', display_name: 'Todos' }, ...testTypes].map(f => (
                                                 <button
