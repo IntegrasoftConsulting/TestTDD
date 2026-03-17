@@ -98,7 +98,7 @@ function App() {
                         darkMode={darkMode}
                         surveyMetrics={surveyMetrics}
                         questionDetailData={questionDetailData}
-                        filteredAnalyticsData={filteredAnalyticsData}
+                        filteredAnalyticsData={filteredAnalyticsData || []}
                     />
                 )}
 

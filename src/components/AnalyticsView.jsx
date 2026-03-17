@@ -5,8 +5,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 const AnalyticsView = ({ 
     isAdmin, adminAnalysisTab, setAdminAnalysisTab, 
     analyticsFilter, setAnalyticsFilter, testTypes,
-    passRateData, COLORS, trendsData, darkMode,
-    surveyMetrics, questionDetailData, filteredAnalyticsData
+    passRateData = [], COLORS = [], trendsData = [], darkMode,
+    surveyMetrics, questionDetailData, filteredAnalyticsData = []
 }) => {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
@@ -32,7 +32,7 @@ const AnalyticsView = ({
                         </div>
                     )}
                     <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
-                        {[{ test_id: 'TODO', display_name: 'Todos' }, ...testTypes].map(f => (
+                        {[{ test_id: 'TODO', display_name: 'Todos' }, ...(testTypes || [])].map(f => (
                             <button
                                 key={f.test_id}
                                 onClick={() => setAnalyticsFilter(f.test_id)}
@@ -59,8 +59,8 @@ const AnalyticsView = ({
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {passRateData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        {(passRateData || []).map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={(COLORS || [])[index % (COLORS?.length || 1)]} />
                                         ))}
                                     </Pie>
                                     <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}/>
@@ -71,7 +71,7 @@ const AnalyticsView = ({
                         <div className="h-64 flex flex-col items-center">
                             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Aciertos por Pregunta (%)</h4>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={trendsData} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
+                                <BarChart data={trendsData || []} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? "#334155" : "#f1f5f9"} />
                                     <XAxis dataKey="name" stroke={darkMode ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} />
                                     <YAxis stroke={darkMode ? "#64748b" : "#94a3b8"} fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />

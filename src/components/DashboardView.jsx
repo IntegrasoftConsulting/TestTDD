@@ -6,7 +6,7 @@ const DashboardView = ({
     isAdmin, groups, groupAnalyticsFilter, setGroupAnalyticsFilter, setSelectedGroupId, fetchGroupDetails,
     stats, setView, testTypes, adminAnalysisTab, setAdminAnalysisTab,
     analyticsFilter, setAnalyticsFilter, passRateData, COLORS, trendsData, darkMode,
-    surveyMetrics, questionDetailData, filteredAnalyticsData
+    surveyMetrics, questionDetailData, filteredAnalyticsData = []
 }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -97,7 +97,7 @@ const DashboardView = ({
                     </h3>
 
                     {questionDetailData.mode === 'admin'
-                        ? questionDetailData.stats.map((q, qi) => (
+                        ? (questionDetailData.stats || []).map((q, qi) => (
                             <div key={qi} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                                 <div className="flex items-start justify-between gap-4 mb-5">
                                     <p className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug">
@@ -147,8 +147,8 @@ const DashboardView = ({
                                     <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">Aún no has realizado este test. ¡Anímate a intentarlo!</p>
                                 </div>
                             )
-                            : questionDetailData.questions.map((q, qi) => {
-                                const chosen = questionDetailData.answers[qi] ?? null;
+                            : (questionDetailData.questions || []).map((q, qi) => {
+                                const chosen = (questionDetailData.answers || [])[qi] ?? null;
                                 const isCorrect = chosen === q.correct;
                                 return (
                                     <div key={qi} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
@@ -208,7 +208,7 @@ const DashboardView = ({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {filteredAnalyticsData.length === 0 ? (
+                            {(filteredAnalyticsData || []).length === 0 ? (
                                 <tr>
                                     <td colSpan="4" className="px-8 py-20 text-center">
                                         <div className="flex flex-col items-center opacity-30">
@@ -218,7 +218,7 @@ const DashboardView = ({
                                     </td>
                                 </tr>
                             ) : (
-                                filteredAnalyticsData.map((res) => (
+                                filteredAnalyticsData?.map((res) => (
                                     <tr key={res.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-8 py-6">
                                             <div className="font-bold text-slate-800 dark:text-slate-200">{res.studentName}</div>

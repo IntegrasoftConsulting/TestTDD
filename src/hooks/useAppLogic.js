@@ -637,10 +637,10 @@ export const useAppLogic = () => {
 
     // MEMOIZED ANALYTICS
     const filteredAnalyticsData = useMemo(() => {
-        let data = analyticsFilter === 'TODO' ? allResults : allResults.filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
+        let data = analyticsFilter === 'TODO' ? (allResults || []) : (allResults || []).filter(item => item.testType === analyticsFilter || (!item.testType && analyticsFilter === 'TDD'));
         if (groupAnalyticsFilter !== 'ALL') {
-            const memberEmails = new Set(groupMembers.map(m => m.email));
-            data = data.filter(r => memberEmails.has(r.email));
+            const memberEmails = new Set((groupMembers || []).map(m => m.email));
+            data = (data || []).filter(r => memberEmails.has(r.email));
         }
         return data;
     }, [allResults, analyticsFilter, groupAnalyticsFilter, groupMembers]);
