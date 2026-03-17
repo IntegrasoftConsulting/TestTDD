@@ -753,6 +753,6 @@ export const useAppLogic = () => {
         groupView, setGroupView, isGroupsLoading, setIsGroupsLoading, loginGroupId, setLoginGroupId,
         handleLogin, handleCreateGroup, handleAddMember, handleDeleteMember, handleToggleGroupTest,
         handleToggleGroupSurvey, handleStartTest, handleAnswer, handleSurveySubmit,
-        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics
+        filteredAnalyticsData, stats, passRateData, trendsData, qDetailData: questionDetailData, surveyMetrics
     };
 };

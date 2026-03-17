@@ -42,7 +42,7 @@ function App() {
         handleAddMember, handleDeleteMember, handleSurveySubmit,
         handleStartTest, testType, loginGroupId, setLoginGroupId,
         fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter,
-        questionDetailData
+        qDetailData
     } = useAppLogic();
 
     return (
@@ -97,7 +97,7 @@ function App() {
                         trendsData={trendsData}
                         darkMode={darkMode}
                         surveyMetrics={surveyMetrics}
-                        questionDetailData={questionDetailData}
+                        questionDetailData={qDetailData}
                         filteredAnalyticsData={filteredAnalyticsData}
                     />
                 )}

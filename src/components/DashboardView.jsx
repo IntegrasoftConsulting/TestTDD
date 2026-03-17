@@ -6,7 +6,7 @@ const DashboardView = ({
     isAdmin, groups, groupAnalyticsFilter, setGroupAnalyticsFilter, setSelectedGroupId, fetchGroupDetails,
     stats, setView, testTypes, adminAnalysisTab, setAdminAnalysisTab,
     analyticsFilter, setAnalyticsFilter, passRateData, COLORS, trendsData, darkMode,
-    surveyMetrics, questionDetailData, filteredAnalyticsData
+    surveyMetrics, qDetailData: questionDetailData, filteredAnalyticsData
 }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -83,7 +83,7 @@ const DashboardView = ({
                 trendsData={trendsData}
                 darkMode={darkMode}
                 surveyMetrics={surveyMetrics}
-                questionDetailData={questionDetailData}
+                questionDetailData={qDetailData}
                 filteredAnalyticsData={filteredAnalyticsData}
             />
 
