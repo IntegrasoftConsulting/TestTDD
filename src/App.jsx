@@ -191,6 +191,62 @@ export default function App() {
     const [groupView, setGroupView] = useState('list');            // 'list' | 'detail'
     const [isGroupsLoading, setIsGroupsLoading] = useState(false);
 
+    // --- HU-20: FUNCIONES DE FETCH EN NIVEL DE COMPONENTE ---
+    const fetchGroups = async () => {
+        if (!isAdmin) return;
+        setIsGroupsLoading(true);
+        try {
+            const { data: groupsData, error: gErr } = await supabase
+                .from('groups')
+                .select('*')
+                .order('name');
+            
+            if (gErr) throw gErr;
+
+            const groupsWithCounts = await Promise.all((groupsData || []).map(async (g) => {
+                const { count } = await supabase
+                    .from('group_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('group_id', g.group_id);
+                return { ...g, memberCount: count || 0 };
+            }));
+
+            setGroups(groupsWithCounts);
+        } catch (err) {
+            console.error("Error fetching groups:", err);
+        } finally {
+            setIsGroupsLoading(false);
+        }
+    };
+
+    const fetchGroupDetails = async (groupId) => {
+        if (!isAdmin || !groupId) return;
+        try {
+            const { data: configData } = await supabase
+                .from('group_test_config')
+                .select('test_id, is_active')
+                .eq('group_id', groupId);
+            
+            const configMap = {};
+            (configData || []).forEach(c => configMap[c.test_id] = c.is_active);
+            setGroupTestConfig(configMap);
+
+            const { data: membersData } = await supabase
+                .from('group_members')
+                .select('*')
+                .eq('group_id', groupId)
+                .order('email');
+            
+            setGroupMembers(membersData || []);
+        } catch (err) {
+            console.error("Error fetching group details:", err);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedGroupId) fetchGroupDetails(selectedGroupId);
+    }, [selectedGroupId, isAdmin]);
+
     // --- AUTH ---
     useEffect(() => {
         const initAuth = async () => {
@@ -324,65 +380,6 @@ export default function App() {
         // Bajamos datos fresquitos
         fetchConfig();
         fetchSurveyConfig();
-        const fetchGroups = async () => {
-            if (!isAdmin) return;
-            setIsGroupsLoading(true);
-            try {
-                // Obtenemos grupos y count de miembros manualmente (o via view si existiera)
-                const { data: groupsData, error: gErr } = await supabase
-                    .from('groups')
-                    .select('*')
-                    .order('name');
-                
-                if (gErr) throw gErr;
-
-                // Para cada grupo, contar miembros
-                const groupsWithCounts = await Promise.all((groupsData || []).map(async (g) => {
-                    const { count, error: cErr } = await supabase
-                        .from('group_members')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('group_id', g.group_id);
-                    return { ...g, memberCount: count || 0 };
-                }));
-
-                setGroups(groupsWithCounts);
-            } catch (err) {
-                console.error("Error fetching groups:", err);
-            } finally {
-                setIsGroupsLoading(false);
-            }
-        };
-
-        const fetchGroupDetails = async (groupId) => {
-            if (!isAdmin) return;
-            try {
-                // 1. Config de tests del grupo
-                const { data: configData } = await supabase
-                    .from('group_test_config')
-                    .select('test_id, is_active')
-                    .eq('group_id', groupId);
-                
-                const configMap = {};
-                (configData || []).forEach(c => configMap[c.test_id] = c.is_active);
-                setGroupTestConfig(configMap);
-
-                // 2. Miembros del grupo
-                const { data: membersData } = await supabase
-                    .from('group_members')
-                    .select('*')
-                    .eq('group_id', groupId)
-                    .order('email');
-                
-                setGroupMembers(membersData || []);
-            } catch (err) {
-                console.error("Error fetching group details:", err);
-            }
-        };
-
-        useEffect(() => {
-            if (selectedGroupId) fetchGroupDetails(selectedGroupId);
-        }, [selectedGroupId]);
-
         if (isLoggedIn && view === 'dashboard') {
             fetchInitialData();
             if (isAdmin) {
