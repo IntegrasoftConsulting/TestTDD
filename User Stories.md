@@ -465,3 +465,49 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Cuando** el usuario selecciona un filtro de test
 - **Entonces** los textos de las preguntas y las opciones deben obtenerse desde la tabla `questions` (campo `question_text` y `options`) filtradas por `test_type`
 - **Y** los datos de respuestas de los participantes deben leerse desde la tabla `results` (campo `answers`), garantizando que el análisis refleja los datos reales de la base de datos.
+
+---
+
+### HU-20: Gestión de Grupos y Control de Evaluaciones por Grupo
+
+**Como** administrador de la plataforma
+**Quiero** poder crear grupos de participantes, asignar usuarios a un grupo, habilitar o deshabilitar tests específicos para cada grupo, y filtrar la analítica por grupo
+**Para** segmentar la experiencia de evaluación según cohortes, equipos o sesiones de capacitación diferentes, sin afectar la disponibilidad global de los tests.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Creación y listado de grupos desde el módulo admin (Camino Feliz)**
+- **Dado** que el administrador accede a su Dashboard
+- **Cuando** navega a la sección **"Grupos"** del panel de administración
+- **Entonces** debe ver un listado de todos los grupos existentes con su nombre, descripción y número de miembros
+- **Y** debe disponer de un botón **"Nuevo Grupo"** que abra un formulario modal para ingresar nombre y descripción del grupo
+- **Y** al confirmar, el grupo debe crearse en la tabla `groups` de Supabase y aparecer inmediatamente en el listado.
+
+**Criterios de Aceptación 2: Control de evaluaciones habilitadas por grupo**
+- **Dado** que el administrador selecciona un grupo del listado
+- **Cuando** visualiza el detalle del grupo
+- **Entonces** debe ver una sección **"Evaluaciones del Grupo"** con un toggle por cada tipo de test registrado en `test_config`
+- **Y** el toggle refleja si ese test está habilitado o deshabilitado específicamente para ese grupo (tabla `group_test_config`)
+- **Y** al cambiar un toggle, el cambio se persiste en Supabase y solo afecta a los miembros del grupo seleccionado, sin modificar la configuración global de `test_config`.
+
+**Criterios de Aceptación 3: Asignación de usuarios a un grupo**
+- **Dado** que el administrador está en el detalle de un grupo
+- **Cuando** añade el correo electrónico de un participante al grupo
+- **Entonces** el usuario queda asociado al grupo en la tabla `group_members`
+- **Y** al iniciar sesión, el sistema detecta el grupo del usuario y aplica la configuración de tests vigente para ese grupo
+- **Y** si un usuario no pertenece a ningún grupo, se le aplica la configuración global de `test_config` como respaldo.
+
+**Criterios de Aceptación 4: Filtro de analítica por grupo**
+- **Dado** que el administrador está en la sección de Analíticas
+- **Cuando** existe al menos un grupo creado
+- **Entonces** debe aparecer un selector de grupo (adicional al filtro de tipo de test) que filtre los resultados mostrados a los miembros del grupo seleccionado
+- **Y** al seleccionar "Todos los grupos", se muestran los resultados globales sin filtro de grupo.
+
+**Criterios de Aceptación 5: Schema de base de datos requerido**
+- **Dado** que se ejecuta el script `setup_groups.sql`
+- **Cuando** se aplica la migración
+- **Entonces** deben existir las siguientes tablas:
+  - `groups` — `group_id` (UUID PK), `name` (TEXT UNIQUE, NOT NULL), `description` (TEXT), `created_at`
+  - `group_members` — `id` (UUID PK), `group_id` (FK → groups), `email` (TEXT NOT NULL), `created_at`, UNIQUE(`group_id`, `email`)
+  - `group_test_config` — `id` (UUID PK), `group_id` (FK → groups), `test_id` (FK → test_config), `is_active` (BOOLEAN NOT NULL DEFAULT true), UNIQUE(`group_id`, `test_id`)
+- **Y** las políticas RLS deben permitir lectura pública y escritura solo a roles autenticados con perfil de administrador.
