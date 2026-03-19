@@ -33,6 +33,7 @@ export const useAppLogic = () => {
     const [surveySubmitting, setSurveySubmitting] = useState(false);
     const [surveyResults, setSurveyResults] = useState([]);
     const [adminAnalysisTab, setAdminAnalysisTab] = useState('tests');
+    const [surveyFilter, setSurveyFilter] = useState('TODO');
     const [darkMode, setDarkMode] = useState(() => {
         const saved = localStorage.getItem('mastery_dark_mode');
         return saved ? JSON.parse(saved) : false;
@@ -725,8 +726,15 @@ export const useAppLogic = () => {
 
     const surveyMetrics = useMemo(() => {
         if (!isAdmin || surveyResults.length === 0) return null;
+
+        let filteredSurveyResults = surveyResults;
+        if (groupAnalyticsFilter !== 'ALL') {
+            const memberEmails = new Set((groupMembers || []).map(m => m.email));
+            filteredSurveyResults = filteredSurveyResults.filter(s => memberEmails.has(s.user_email));
+        }
+
         const processSurvey = (id) => {
-            const items = surveyResults.filter(s => s.survey_id === id);
+            const items = filteredSurveyResults.filter(s => s.survey_id === id);
             if (items.length === 0) return { avg: 0, content: 0, instructor: 0, practical: 0, count: 0 };
             const sumContent = items.reduce((acc, curr) => acc + curr.rating_content, 0);
             const sumInstructor = items.reduce((acc, curr) => acc + curr.rating_instructor, 0);
@@ -740,10 +748,9 @@ export const useAppLogic = () => {
             };
         };
 
-        let comments = surveyResults.filter(s => s.comments);
-        if (analyticsFilter !== 'TODO') {
-            const currentSurveyId = analyticsFilter + '_SESSION';
-            comments = comments.filter(s => s.survey_id === currentSurveyId);
+        let comments = filteredSurveyResults.filter(s => s.comments);
+        if (surveyFilter !== 'TODO') {
+            comments = comments.filter(s => s.survey_id === surveyFilter);
         }
 
         return { 
@@ -751,7 +758,7 @@ export const useAppLogic = () => {
             BDD: processSurvey('BDD_SESSION'), 
             recentComments: comments 
         };
-    }, [surveyResults, isAdmin, analyticsFilter]);
+    }, [surveyResults, isAdmin, groupAnalyticsFilter, groupMembers, surveyFilter]);
 
     return {
         user, view, setView, studentName, setStudentName, email, setEmail, isLoggedIn, setIsLoggedIn,
@@ -760,6 +767,7 @@ export const useAppLogic = () => {
         analyticsFilter, setAnalyticsFilter, testConfig, setTestConfig, testTypes, setTestTypes,
         surveyConfig, setSurveyConfig, availableSurveys, setAvailableSurveys, surveyData, setSurveyData,
         surveySubmitting, setSurveySubmitting, surveyResults, setSurveyResults, adminAnalysisTab, setAdminAnalysisTab,
+        surveyFilter, setSurveyFilter,
         darkMode, setDarkMode, questions, setQuestions, questionsLoading, setQuestionsLoading, questionsCache, setQuestionsCache,
         groups, setGroups, selectedGroupId, setSelectedGroupId, groupTestConfig, setGroupTestConfig,
         groupSurveyConfig, setGroupSurveyConfig, groupMembers, setGroupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter,

@@ -6,7 +6,8 @@ const DashboardView = ({
     isAdmin, groups, groupAnalyticsFilter, setGroupAnalyticsFilter, setSelectedGroupId, fetchGroupDetails,
     stats, setView, testTypes, adminAnalysisTab, setAdminAnalysisTab,
     analyticsFilter, setAnalyticsFilter, passRateData, COLORS, trendsData, darkMode,
-    surveyMetrics, questionDetailData, filteredAnalyticsData = []
+    surveyMetrics, questionDetailData, filteredAnalyticsData = [],
+    surveyFilter, setSurveyFilter, availableSurveys = []
 }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -85,6 +86,9 @@ const DashboardView = ({
                 surveyMetrics={surveyMetrics}
                 questionDetailData={questionDetailData}
                 filteredAnalyticsData={filteredAnalyticsData}
+                surveyFilter={surveyFilter}
+                setSurveyFilter={setSurveyFilter}
+                availableSurveys={availableSurveys}
             />
 
             {/* HU-19: Tarjetas de detalle por pregunta — visible solo al filtrar un test específico */}

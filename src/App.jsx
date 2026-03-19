@@ -25,7 +25,7 @@ function App() {
         answers, isSaving, finalScore,
         stats, filteredAnalyticsData, COLORS,
         testTypes, analyticsFilter, setAnalyticsFilter,
-        passRateData, trendsData,
+        passRateData, trendsData, surveyFilter, setSurveyFilter,
         
         // Configs
         groupTestConfig, groupSurveyConfig, surveyConfig,
@@ -99,6 +99,9 @@ function App() {
                         surveyMetrics={surveyMetrics}
                         questionDetailData={questionDetailData}
                         filteredAnalyticsData={filteredAnalyticsData || []}
+                        surveyFilter={surveyFilter}
+                        setSurveyFilter={setSurveyFilter}
+                        availableSurveys={availableSurveys}
                     />
                 )}
 

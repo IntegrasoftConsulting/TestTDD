@@ -6,7 +6,8 @@ const AnalyticsView = ({
     isAdmin, adminAnalysisTab, setAdminAnalysisTab, 
     analyticsFilter, setAnalyticsFilter, testTypes,
     passRateData = [], COLORS = [], trendsData = [], darkMode,
-    surveyMetrics, questionDetailData, filteredAnalyticsData = []
+    surveyMetrics, questionDetailData, filteredAnalyticsData = [],
+    surveyFilter, setSurveyFilter, availableSurveys = []
 }) => {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
@@ -32,15 +33,27 @@ const AnalyticsView = ({
                         </div>
                     )}
                     <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
-                        {[{ test_id: 'TODO', display_name: 'Todos' }, ...(testTypes || [])].map(f => (
-                            <button
-                                key={f.test_id}
-                                onClick={() => setAnalyticsFilter(f.test_id)}
-                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f.test_id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            >
-                                {f.display_name}
-                            </button>
-                        ))}
+                        {adminAnalysisTab === 'tests' ? (
+                            [{ test_id: 'TODO', display_name: 'Todos' }, ...(testTypes || [])].map(f => (
+                                <button
+                                    key={f.test_id}
+                                    onClick={() => setAnalyticsFilter(f.test_id)}
+                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${analyticsFilter === f.test_id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                >
+                                    {f.display_name}
+                                </button>
+                            ))
+                        ) : (
+                            [{ id: 'TODO', title: 'Todas' }, ...(availableSurveys || [])].map(s => (
+                                <button
+                                    key={s.id}
+                                    onClick={() => setSurveyFilter(s.id)}
+                                    className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${surveyFilter === s.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                >
+                                    {s.title}
+                                </button>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -116,7 +129,7 @@ const AnalyticsView = ({
                         {surveyMetrics && surveyMetrics.recentComments && surveyMetrics.recentComments.length > 0 && (
                             <div className="mt-8">
                                 <h4 className="font-black text-lg text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                    <span className="text-indigo-500">◈</span> Comentarios de Encuestas {analyticsFilter !== 'TODO' ? `(${analyticsFilter})` : ''}
+                                    <span className="text-indigo-500">◈</span> Comentarios de Encuestas {surveyFilter !== 'TODO' ? `(${surveyFilter})` : ''}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {surveyMetrics.recentComments.map((comment, idx) => (
