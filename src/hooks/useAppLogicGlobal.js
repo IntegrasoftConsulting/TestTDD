@@ -739,8 +739,19 @@ export const useAppLogic = () => {
                 count: items.length
             };
         };
-        return { TDD: processSurvey('TDD_SESSION'), BDD: processSurvey('BDD_SESSION'), recentComments: surveyResults.filter(s => s.comments).slice(0, 10) };
-    }, [surveyResults, isAdmin]);
+
+        let comments = surveyResults.filter(s => s.comments);
+        if (analyticsFilter !== 'TODO') {
+            const currentSurveyId = analyticsFilter + '_SESSION';
+            comments = comments.filter(s => s.survey_id === currentSurveyId);
+        }
+
+        return { 
+            TDD: processSurvey('TDD_SESSION'), 
+            BDD: processSurvey('BDD_SESSION'), 
+            recentComments: comments 
+        };
+    }, [surveyResults, isAdmin, analyticsFilter]);
 
     return {
         user, view, setView, studentName, setStudentName, email, setEmail, isLoggedIn, setIsLoggedIn,

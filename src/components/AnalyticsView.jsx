@@ -112,6 +112,32 @@ const AnalyticsView = ({
                                 </div>
                             ))}
                         </div>
+
+                        {surveyMetrics && surveyMetrics.recentComments && surveyMetrics.recentComments.length > 0 && (
+                            <div className="mt-8">
+                                <h4 className="font-black text-lg text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                                    <span className="text-indigo-500">◈</span> Comentarios de Encuestas {analyticsFilter !== 'TODO' ? `(${analyticsFilter})` : ''}
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {surveyMetrics.recentComments.map((comment, idx) => (
+                                        <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex flex-col">
+                                            <p className="text-slate-600 dark:text-slate-300 text-sm italic mb-4">"{comment.comments}"</p>
+                                            <div className="flex justify-between items-end mt-auto">
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{comment.student_name || 'Anónimo'}</p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">{comment.survey_id}</p>
+                                                </div>
+                                                <div className="text-right flex gap-1">
+                                                    <span className="text-[10px] px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold" title="Contenido">C: {comment.rating_content}</span>
+                                                    <span className="text-[10px] px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-bold" title="Instructor">I: {comment.rating_instructor}</span>
+                                                    <span className="text-[10px] px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold" title="Práctica">P: {comment.rating_practical}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
