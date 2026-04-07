@@ -733,20 +733,24 @@ export const useAppLogic = () => {
             filteredSurveyResults = filteredSurveyResults.filter(s => memberEmails.has(s.user_email));
         }
 
-        const processSurvey = (id) => {
+        const surveyIds = [...new Set(filteredSurveyResults.map(s => s.survey_id))];
+        const surveys = {};
+        
+        surveyIds.forEach(id => {
             const items = filteredSurveyResults.filter(s => s.survey_id === id);
-            if (items.length === 0) return { avg: 0, content: 0, instructor: 0, practical: 0, count: 0 };
-            const sumContent = items.reduce((acc, curr) => acc + curr.rating_content, 0);
-            const sumInstructor = items.reduce((acc, curr) => acc + curr.rating_instructor, 0);
-            const sumPractical = items.reduce((acc, curr) => acc + curr.rating_practical, 0);
-            return {
-                avg: ((sumContent + sumInstructor + sumPractical) / (items.length * 3)).toFixed(1),
-                content: (sumContent / items.length).toFixed(1),
-                instructor: (sumInstructor / items.length).toFixed(1),
-                practical: (sumPractical / items.length).toFixed(1),
-                count: items.length
-            };
-        };
+            if (items.length > 0) {
+                const sumContent = items.reduce((acc, curr) => acc + curr.rating_content, 0);
+                const sumInstructor = items.reduce((acc, curr) => acc + curr.rating_instructor, 0);
+                const sumPractical = items.reduce((acc, curr) => acc + curr.rating_practical, 0);
+                surveys[id] = {
+                    avg: ((sumContent + sumInstructor + sumPractical) / (items.length * 3)).toFixed(1),
+                    content: (sumContent / items.length).toFixed(1),
+                    instructor: (sumInstructor / items.length).toFixed(1),
+                    practical: (sumPractical / items.length).toFixed(1),
+                    count: items.length
+                };
+            }
+        });
 
         let comments = filteredSurveyResults.filter(s => s.comments);
         if (surveyFilter !== 'TODO') {
@@ -754,8 +758,7 @@ export const useAppLogic = () => {
         }
 
         return { 
-            TDD: processSurvey('TDD_SESSION'), 
-            BDD: processSurvey('BDD_SESSION'), 
+            surveys,
             recentComments: comments 
         };
     }, [surveyResults, isAdmin, groupAnalyticsFilter, groupMembers, surveyFilter]);
