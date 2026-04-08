@@ -691,3 +691,35 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 **Criterio de Aceptación 5: Compatibilidad visual**
 - La sección debe ser compatible con dark mode, responsive, y mantener el sistema de diseño existente.
 
+
+---
+
+### HU-27: Parametrización de Puntaje por Defecto para Exámenes Pendientes
+
+**Como** administrador de la plataforma
+**Quiero** asignar un puntaje por defecto a los exámenes que los estudiantes aún no han presentado y que este valor sea parametrizable por tipo de test
+**Para** que el promedio general ponderado refleje una penalización o un valor base para las evaluaciones pendientes, incentivando la completitud de las mismas.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Parametrización por tipo de examen**
+- **Dado** que el administrador está en el panel de control de evaluaciones
+- **Cuando** visualiza la lista de tests (TDD, BDD, SOLID, etc.)
+- **Entonces** debe poder ingresar un valor numérico (0-100) como "Puntaje por Defecto" para cada uno
+- **Y** este valor debe persistir en la tabla `test_config`.
+
+**Criterios de Aceptación 2: Inclusión de exámenes pendientes en el promedio (Admin)**
+- **Dado** que un estudiante tiene exámenes marcados como "Pendientes" (no intentados)
+- **Cuando** el administrador visualiza el Dashboard de Resultados Generales
+- **Entonces** el sistema debe calcular el `% General` promediando todos los tests activos
+- **Y** para los tests pendientes debe usar el valor configurado en el criterio 1 en lugar de ignorar la evaluación.
+
+**Criterios de Aceptación 3: Visualización del promedio proyectado (Estudiante)**
+- **Dado** que un estudiante tiene evaluaciones sin realizar
+- **Cuando** accede a su "Resumen de Notas"
+- **Entonces** su indicador de progreso y porcentaje general deben reflejar la influencia de los tests pendientes con su puntaje por defecto.
+
+**Criterios de Aceptación 4: Indicador visual de puntaje por defecto**
+- **Dado** que un puntaje en la tabla de resultados proviene de un test no presentado
+- **Cuando** se visualiza la tabla de detalles
+- **Entonces** el sistema debe mostrar un indicador claro (ej. etiqueta "Default" o color distintivo) para diferenciarlo de un resultado obtenido mediante un examen realizado.

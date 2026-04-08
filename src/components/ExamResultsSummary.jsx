@@ -140,8 +140,10 @@ const ExamResultsSummary = ({ examSummaryData, testTypes, darkMode }) => {
             valB = (b.name || '').toLowerCase();
             return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
         } else {
-            valA = a.scoresByType[sortField] ?? -1;
-            valB = b.scoresByType[sortField] ?? -1;
+            const scoreObjA = a.scoresByType[sortField];
+            const scoreObjB = b.scoresByType[sortField];
+            valA = scoreObjA && typeof scoreObjA === 'object' ? scoreObjA.value : (scoreObjA ?? -1);
+            valB = scoreObjB && typeof scoreObjB === 'object' ? scoreObjB.value : (scoreObjB ?? -1);
         }
         return sortDir === 'asc' ? valA - valB : valB - valA;
     });
@@ -313,13 +315,21 @@ const ExamResultsSummary = ({ examSummaryData, testTypes, darkMode }) => {
                                         </div>
                                     </td>
                                     {activeTestIds.map(typeId => {
-                                        const score = student.scoresByType[typeId];
+                                        const scoreRaw = student.scoresByType[typeId];
+                                        const isDefault = scoreRaw && typeof scoreRaw === 'object' && scoreRaw.isDefault;
+                                        const score = isDefault ? scoreRaw.value : scoreRaw;
+                                        
                                         return (
                                             <td key={typeId} className="px-4 py-5 text-center">
                                                 {score !== undefined ? (
-                                                    <span className={`inline-block px-3 py-1.5 rounded-xl text-xs font-black border ${getScoreBg(score)} ${getScoreColor(score)}`}>
-                                                        {Math.round(score)}%
-                                                    </span>
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className={`inline-block px-3 py-1.5 rounded-xl text-xs font-black border ${getScoreBg(score)} ${getScoreColor(score)}`}>
+                                                            {Math.round(score)}%
+                                                        </span>
+                                                        {isDefault && (
+                                                            <span className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">Default</span>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-slate-300 dark:text-slate-600 text-xs font-bold flex items-center justify-center gap-1">
                                                         <Clock className="w-3 h-3" /> Pendiente

@@ -82,16 +82,36 @@ const GroupManager = ({
                         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                             <ClipboardCheck className="w-4 h-4" /> Evaluaciones del Grupo
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {testTypes.map(tt => {
                                 const isActive = groupTestConfig[tt.test_id] ?? tt.is_active;
                                 return (
-                                    <button key={tt.test_id} onClick={() => handleToggleGroupTest(tt.test_id, isActive)}
-                                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${isActive ? 'border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-300' : 'border-slate-100 dark:border-slate-800 text-slate-400 opacity-60'}`}
-                                    >
-                                        <span className="font-bold text-sm">{tt.display_name}</span>
-                                        <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-indigo-600 animate-pulse' : 'bg-slate-300'}`}></div>
-                                    </button>
+                                    <div key={tt.test_id} className={`p-4 rounded-xl border-2 transition-all ${isActive ? 'border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/30 dark:bg-indigo-900/10' : 'border-slate-100 dark:border-slate-800 opacity-60'}`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className={`font-bold text-sm ${isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-400'}`}>{tt.display_name}</span>
+                                            <button 
+                                                onClick={() => handleToggleGroupTest(tt.test_id, isActive)}
+                                                className={`w-3 h-3 rounded-full transition-all ${isActive ? 'bg-indigo-600 animate-pulse shadow-lg shadow-indigo-300' : 'bg-slate-300'}`}
+                                            ></button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Puntaje Default:</label>
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                max="100"
+                                                defaultValue={tt.default_score}
+                                                onBlur={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    if (!isNaN(val) && val !== tt.default_score) {
+                                                        handleUpdateTestDefaultScore(tt.test_id, val);
+                                                    }
+                                                }}
+                                                className="w-16 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 transition-all"
+                                            />
+                                            <span className="text-[10px] font-bold text-slate-400">%</span>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>

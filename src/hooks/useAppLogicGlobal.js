@@ -169,7 +169,7 @@ export const useAppLogic = () => {
         try {
             const { data, error: confError } = await supabase
                 .from('test_config')
-                .select('test_id, display_name, description, order_index, is_active')
+                .select('test_id, display_name, description, order_index, is_active, default_score')
                 .order('order_index', { ascending: true });
             if (confError) throw confError;
             
@@ -202,7 +202,8 @@ export const useAppLogic = () => {
                     display_name: item.display_name || `Test ${item.test_id}`,
                     description: item.description || '',
                     order_index: item.order_index ?? 99,
-                    is_active: item.is_active
+                    is_active: item.is_active,
+                    default_score: item.default_score ?? 0
                 })));
             } else {
                 setTestTypes(DEFAULT_TEST_TYPES);
@@ -799,17 +800,31 @@ export const useAppLogic = () => {
                 }
             });
 
-            const presentedTypes = Object.keys(scoresByType);
-            const totalPresented = presentedTypes.length;
-            const sumBest = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
-            const generalPct = totalPresented > 0 ? sumBest / totalPresented : 0;
+            const pendingTypes = activeTestIds.filter(id => !scoresByType[id]);
+            const totalActive = activeTestIds.length;
+            
+            // HU-27: Sumar mejores puntajes + (puntajes por defecto para pendientes)
+            let sumTotalWithDefaults = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+            pendingTypes.forEach(pId => {
+                const testRef = (testTypes || []).find(t => t.test_id === pId);
+                sumTotalWithDefaults += (testRef?.default_score || 0);
+            });
+
+            const generalPct = totalActive > 0 ? sumTotalWithDefaults / totalActive : 0;
+            
+            // Marcar tipos pendientes con su puntaje por defecto para la UI
+            const scoresWithDefaults = { ...scoresByType };
+            pendingTypes.forEach(pId => {
+                const testRef = (testTypes || []).find(t => t.test_id === pId);
+                scoresWithDefaults[pId] = { isDefault: true, value: testRef?.default_score || 0 };
+            });
 
             return {
                 name: student.name,
                 email: student.email,
-                scoresByType,
+                scoresByType: scoresWithDefaults, // Ahora contiene objetos para pendientes
                 presentedTypes,
-                pendingTypes: activeTestIds.filter(id => !scoresByType[id]),
+                pendingTypes,
                 generalPct: Math.round(generalPct * 10) / 10,
                 totalAttempts: student.results.length,
                 status: generalPct >= 70 ? 'approved' : 'review'
@@ -828,10 +843,15 @@ export const useAppLogic = () => {
         // Promedio por tipo de test
         const avgByType = {};
         activeTestIds.forEach(typeId => {
-            const studentsWithType = students.filter(s => s.scoresByType[typeId] !== undefined);
-            if (studentsWithType.length > 0) {
-                const sum = studentsWithType.reduce((acc, s) => acc + s.scoresByType[typeId], 0);
-                avgByType[typeId] = Math.round((sum / studentsWithType.length) * 10) / 10;
+            const studentsWithScore = students.map(s => {
+                const scoreObj = s.scoresByType[typeId];
+                if (scoreObj && typeof scoreObj === 'object') return scoreObj.isDefault ? null : scoreObj.value;
+                return scoreObj;
+            }).filter(v => v !== null && v !== undefined);
+
+            if (studentsWithScore.length > 0) {
+                const sum = studentsWithScore.reduce((acc, v) => acc + v, 0);
+                avgByType[typeId] = Math.round((sum / studentsWithScore.length) * 10) / 10;
             }
         });
 
@@ -880,19 +900,28 @@ export const useAppLogic = () => {
 
         const presentedTypes = Object.keys(scoresByType);
         const pendingTypes = activeTestIds.filter(id => !scoresByType[id]);
-        const totalPresented = presentedTypes.length;
-        const sumBest = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
-        const generalPct = totalPresented > 0 ? Math.round((sumBest / totalPresented) * 10) / 10 : 0;
+        
+        // HU-27: Cálculo ponderado incluyendo pendientes con valor por defecto
+        let sumTotalWithDefaults = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+        pendingTypes.forEach(pId => {
+            const testRef = (testTypes || []).find(t => t.test_id === pId);
+            sumTotalWithDefaults += (testRef?.default_score || 0);
+        });
+
+        const totalActive = activeTestIds.length;
+        const generalPct = totalActive > 0 ? Math.round((sumTotalWithDefaults / totalActive) * 10) / 10 : 0;
 
         // Detalle por tipo
         const testDetails = activeTestIds.map(typeId => {
             const testInfo = (testTypes || []).find(t => t.test_id === typeId);
+            const isPending = !scoresByType[typeId] && scoresByType[typeId] !== 0;
             return {
                 testId: typeId,
                 displayName: testInfo?.display_name || typeId,
-                bestScore: scoresByType[typeId] ?? null,
+                bestScore: isPending ? (testInfo?.default_score || 0) : scoresByType[typeId],
                 attempts: attemptsByType[typeId] || 0,
-                isPending: !scoresByType[typeId] && scoresByType[typeId] !== 0
+                isPending,
+                isDefault: isPending
             };
         });
 
@@ -906,6 +935,24 @@ export const useAppLogic = () => {
             testDetails
         };
     }, [allResults, isAdmin, isLoggedIn, email, testTypes]);
+
+    // HU-27: Actualizar puntaje por defecto de un test
+    const handleUpdateTestDefaultScore = useCallback(async (testId, newScore) => {
+        try {
+            const { error: upErr } = await supabase
+                .from('test_config')
+                .update({ default_score: newScore })
+                .eq('test_id', testId);
+
+            if (upErr) throw upErr;
+
+            // Actualizar estado local
+            setTestTypes(prev => prev.map(tt => tt.test_id === testId ? { ...tt, default_score: newScore } : tt));
+        } catch (err) {
+            console.error('Error updating default score:', err);
+            setError('Error al actualizar el puntaje por defecto');
+        }
+    }, [supabase, setError]);
 
     return {
         user, view, setView, studentName, setStudentName, email, setEmail, isLoggedIn, setIsLoggedIn,
@@ -922,6 +969,7 @@ export const useAppLogic = () => {
         groupView, setGroupView, isGroupsLoading, setIsGroupsLoading, loginGroupId, setLoginGroupId,
         handleLogin, handleCreateGroup, handleAddMember, handleDeleteMember, handleToggleGroupTest,
         handleToggleGroupSurvey, handleStartTest, handleAnswer, handleSurveySubmit,
+        handleUpdateTestDefaultScore,
         filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, examSummaryData, studentSummaryData, COLORS
     };
 };

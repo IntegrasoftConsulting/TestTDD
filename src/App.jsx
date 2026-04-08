@@ -131,6 +131,7 @@ function App() {
                         groupMembers={groupMembers}
                         handleAddMember={handleAddMember}
                         handleDeleteMember={handleDeleteMember}
+                        handleUpdateTestDefaultScore={handleUpdateTestDefaultScore}
                     />
                 )}
 
