@@ -803,6 +803,8 @@ export const useAppLogic = () => {
             const pendingTypes = activeTestIds.filter(id => !scoresByType[id]);
             const totalActive = activeTestIds.length;
             
+            const presentedTypes = Object.keys(scoresByType);
+
             // HU-27: Sumar mejores puntajes + (puntajes por defecto para pendientes)
             let sumTotalWithDefaults = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
             pendingTypes.forEach(pId => {
@@ -929,7 +931,7 @@ export const useAppLogic = () => {
             generalPct,
             status: generalPct >= 70 ? 'approved' : 'review',
             totalAttempts: myResults.length,
-            completedTypes: totalPresented,
+            completedTypes: presentedTypes.length,
             totalTypes: activeTestIds.length,
             pendingTypes,
             testDetails

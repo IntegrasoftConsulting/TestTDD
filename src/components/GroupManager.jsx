@@ -6,7 +6,7 @@ const GroupManager = ({
     setNewGroupModal, newGroupForm, setNewGroupForm, handleCreateGroup, isSaving,
     testTypes, groupTestConfig, handleToggleGroupTest,
     availableSurveys, groupSurveyConfig, surveyConfig, handleToggleGroupSurvey,
-    groupMembers, handleAddMember, handleDeleteMember
+    groupMembers, handleAddMember, handleDeleteMember, handleUpdateTestDefaultScore
 }) => {
     const selectedGroup = groups.find(g => g.group_id === selectedGroupId);
 
