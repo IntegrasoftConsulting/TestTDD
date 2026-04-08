@@ -857,6 +857,56 @@ export const useAppLogic = () => {
         };
     }, [allResults, isAdmin, groupAnalyticsFilter, groupMembers, testTypes]);
 
+    // HU-26: Resumen de Notas Consolidado para el Estudiante
+    const studentSummaryData = useMemo(() => {
+        if (isAdmin || !isLoggedIn || !allResults || allResults.length === 0) return null;
+
+        // Filtrar solo resultados del estudiante actual
+        const myResults = allResults.filter(r => r.email === email);
+        if (myResults.length === 0) return null;
+
+        const activeTestIds = (testTypes || []).filter(t => t.is_active).map(t => t.test_id);
+
+        // Mejor puntaje por tipo de test
+        const scoresByType = {};
+        const attemptsByType = {};
+        myResults.forEach(r => {
+            const type = r.testType || 'TDD';
+            if (!scoresByType[type] || r.score > scoresByType[type]) {
+                scoresByType[type] = r.score;
+            }
+            attemptsByType[type] = (attemptsByType[type] || 0) + 1;
+        });
+
+        const presentedTypes = Object.keys(scoresByType);
+        const pendingTypes = activeTestIds.filter(id => !scoresByType[id]);
+        const totalPresented = presentedTypes.length;
+        const sumBest = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+        const generalPct = totalPresented > 0 ? Math.round((sumBest / totalPresented) * 10) / 10 : 0;
+
+        // Detalle por tipo
+        const testDetails = activeTestIds.map(typeId => {
+            const testInfo = (testTypes || []).find(t => t.test_id === typeId);
+            return {
+                testId: typeId,
+                displayName: testInfo?.display_name || typeId,
+                bestScore: scoresByType[typeId] ?? null,
+                attempts: attemptsByType[typeId] || 0,
+                isPending: !scoresByType[typeId] && scoresByType[typeId] !== 0
+            };
+        });
+
+        return {
+            generalPct,
+            status: generalPct >= 70 ? 'approved' : 'review',
+            totalAttempts: myResults.length,
+            completedTypes: totalPresented,
+            totalTypes: activeTestIds.length,
+            pendingTypes,
+            testDetails
+        };
+    }, [allResults, isAdmin, isLoggedIn, email, testTypes]);
+
     return {
         user, view, setView, studentName, setStudentName, email, setEmail, isLoggedIn, setIsLoggedIn,
         testType, setTestType, currentQuestion, setCurrentQuestion, answers, setAnswers, finalScore, setFinalScore,
@@ -872,6 +922,6 @@ export const useAppLogic = () => {
         groupView, setGroupView, isGroupsLoading, setIsGroupsLoading, loginGroupId, setLoginGroupId,
         handleLogin, handleCreateGroup, handleAddMember, handleDeleteMember, handleToggleGroupTest,
         handleToggleGroupSurvey, handleStartTest, handleAnswer, handleSurveySubmit,
-        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, examSummaryData, COLORS
+        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, examSummaryData, studentSummaryData, COLORS
     };
 };

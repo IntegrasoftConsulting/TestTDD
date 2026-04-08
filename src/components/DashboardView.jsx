@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, Trophy, Star, BarChart3, ClipboardCheck, Filter } from 'lucide-react';
 import AnalyticsView from './AnalyticsView';
+import StudentGradeSummary from './StudentGradeSummary';
 
 const DashboardView = ({ 
     isAdmin, groups, groupAnalyticsFilter, setGroupAnalyticsFilter, setSelectedGroupId, fetchGroupDetails,
@@ -8,7 +9,7 @@ const DashboardView = ({
     analyticsFilter, setAnalyticsFilter, passRateData, COLORS, trendsData, darkMode,
     surveyMetrics, questionDetailData, filteredAnalyticsData = [],
     surveyFilter, setSurveyFilter, availableSurveys = [],
-    examSummaryData
+    examSummaryData, studentSummaryData, handleStartTest
 }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -41,6 +42,17 @@ const DashboardView = ({
                         ))}
                     </select>
                 </div>
+            )}
+
+            {/* HU-26: Resumen de notas para estudiantes */}
+            {!isAdmin && (
+                <StudentGradeSummary
+                    studentSummaryData={studentSummaryData}
+                    darkMode={darkMode}
+                    setView={setView}
+                    handleStartTest={handleStartTest}
+                    testTypes={testTypes}
+                />
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

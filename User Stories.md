@@ -649,3 +649,45 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Cuando** accedo al Dashboard
 - **Entonces** no debo ver la pestaña "Resultados Generales".
 
+---
+
+### HU-26: Resumen de Notas Consolidado para el Estudiante
+
+**Como** estudiante de la plataforma
+**Quiero** ver un resumen visual consolidado de mis notas en todos los exámenes que he presentado, incluyendo mi porcentaje general ponderado
+**Para** tener una visión clara de mi desempeño integral, identificar mis fortalezas y las áreas donde necesito reforzar conocimientos.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Tarjeta de Resumen General visible en el Dashboard del estudiante**
+- **Dado** que soy un estudiante que ha presentado al menos un examen
+- **Cuando** accedo a mi Dashboard
+- **Entonces** debo ver una sección prominente de "Mi Resumen de Notas" que incluya:
+  - Un indicador visual (gauge) con mi porcentaje general ponderado
+  - El estatus global (✅ Aprobado si ≥ 70% / ⚠️ En revisión si < 70%)
+  - Mi cantidad de exámenes completados vs. disponibles
+
+**Criterio de Aceptación 2: Desglose por tipo de evaluación**
+- **Dado** que he presentado múltiples tipos de examen
+- **Cuando** visualizo mi resumen
+- **Entonces** debo ver una tarjeta por cada tipo de evaluación con:
+  - El nombre de la evaluación
+  - Mi mejor puntaje obtenido
+  - Número de intentos realizados
+  - Indicador visual de progreso (barra de color según rango)
+- **Y** los tipos de examen que no he presentado deben mostrarse como "Pendiente".
+
+**Criterio de Aceptación 3: Cálculo del porcentaje ponderado**
+- **Dado** que he presentado exámenes de distintos tipos
+- **Cuando** se calcula mi porcentaje general
+- **Entonces** debe usarse el mejor puntaje de cada tipo de examen presentado
+- **Y** el porcentaje general debe ser el promedio equitativo de los mejores puntajes.
+
+**Criterio de Aceptación 4: Mensajes para estudiantes sin exámenes**
+- **Dado** que soy un estudiante que aún no ha presentado ningún examen
+- **Cuando** accedo a mi Dashboard
+- **Entonces** debo ver un mensaje motivacional indicando que aún no tengo resultados, con un botón para comenzar mi primera evaluación.
+
+**Criterio de Aceptación 5: Compatibilidad visual**
+- La sección debe ser compatible con dark mode, responsive, y mantener el sistema de diseño existente.
+
