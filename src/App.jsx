@@ -42,7 +42,7 @@ function App() {
         handleAddMember, handleDeleteMember, handleSurveySubmit,
         handleStartTest, testType, loginGroupId, setLoginGroupId,
         fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter,
-        questionDetailData
+        questionDetailData, examSummaryData
     } = useAppLogic();
 
     return (
@@ -102,6 +102,7 @@ function App() {
                         surveyFilter={surveyFilter}
                         setSurveyFilter={setSurveyFilter}
                         availableSurveys={availableSurveys}
+                        examSummaryData={examSummaryData}
                     />
                 )}
 

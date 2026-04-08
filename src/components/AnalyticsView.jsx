@@ -1,13 +1,15 @@
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import ExamResultsSummary from './ExamResultsSummary';
 
 const AnalyticsView = ({ 
     isAdmin, adminAnalysisTab, setAdminAnalysisTab, 
     analyticsFilter, setAnalyticsFilter, testTypes,
     passRateData = [], COLORS = [], trendsData = [], darkMode,
     surveyMetrics, questionDetailData, filteredAnalyticsData = [],
-    surveyFilter, setSurveyFilter, availableSurveys = []
+    surveyFilter, setSurveyFilter, availableSurveys = [],
+    examSummaryData
 }) => {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
@@ -30,8 +32,15 @@ const AnalyticsView = ({
                             >
                                 Encuestas
                             </button>
+                            <button 
+                                onClick={() => setAdminAnalysisTab('examResults')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${adminAnalysisTab === 'examResults' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 dark:text-indigo-500 hover:text-indigo-600'}`}
+                            >
+                                Resultados Generales
+                            </button>
                         </div>
                     )}
+                    {adminAnalysisTab !== 'examResults' && (
                     <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">
                         {adminAnalysisTab === 'tests' ? (
                             [{ test_id: 'TODO', display_name: 'Todos' }, ...(testTypes || [])].map(f => (
@@ -55,6 +64,7 @@ const AnalyticsView = ({
                             ))
                         )}
                     </div>
+                    )}
                 </div>
             </div>
             
@@ -94,6 +104,12 @@ const AnalyticsView = ({
                             </ResponsiveContainer>
                         </div>
                     </div>
+                ) : adminAnalysisTab === 'examResults' ? (
+                    <ExamResultsSummary 
+                        examSummaryData={examSummaryData}
+                        testTypes={testTypes}
+                        darkMode={darkMode}
+                    />
                 ) : (
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

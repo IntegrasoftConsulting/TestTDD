@@ -763,6 +763,100 @@ export const useAppLogic = () => {
         };
     }, [surveyResults, isAdmin, groupAnalyticsFilter, groupMembers, surveyFilter]);
 
+    // HU-25a: Cálculo del Porcentaje General Ponderado por Alumno
+    const examSummaryData = useMemo(() => {
+        if (!isAdmin || !allResults || allResults.length === 0) return null;
+
+        // Aplicar filtro de grupo
+        let resultsPool = allResults;
+        if (groupAnalyticsFilter !== 'ALL') {
+            const memberEmails = new Set((groupMembers || []).map(m => m.email));
+            resultsPool = resultsPool.filter(r => memberEmails.has(r.email));
+        }
+
+        if (resultsPool.length === 0) return null;
+
+        // Tipos de test activos
+        const activeTestIds = (testTypes || []).map(t => t.test_id);
+
+        // Agrupar por alumno (email)
+        const studentMap = {};
+        resultsPool.forEach(r => {
+            const key = r.email || r.studentName;
+            if (!studentMap[key]) {
+                studentMap[key] = { name: r.studentName, email: r.email || '', results: [] };
+            }
+            studentMap[key].results.push(r);
+        });
+
+        // Calcular por alumno
+        const students = Object.values(studentMap).map(student => {
+            const scoresByType = {};
+            student.results.forEach(r => {
+                const type = r.testType || 'TDD';
+                if (!scoresByType[type] || r.score > scoresByType[type]) {
+                    scoresByType[type] = r.score;
+                }
+            });
+
+            const presentedTypes = Object.keys(scoresByType);
+            const totalPresented = presentedTypes.length;
+            const sumBest = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+            const generalPct = totalPresented > 0 ? sumBest / totalPresented : 0;
+
+            return {
+                name: student.name,
+                email: student.email,
+                scoresByType,
+                presentedTypes,
+                pendingTypes: activeTestIds.filter(id => !scoresByType[id]),
+                generalPct: Math.round(generalPct * 10) / 10,
+                totalAttempts: student.results.length,
+                status: generalPct >= 70 ? 'approved' : 'review'
+            };
+        });
+
+        // Ordenar por porcentaje general descendente
+        students.sort((a, b) => b.generalPct - a.generalPct);
+
+        // KPIs globales
+        const totalStudents = students.length;
+        const overallAvg = totalStudents > 0
+            ? Math.round((students.reduce((acc, s) => acc + s.generalPct, 0) / totalStudents) * 10) / 10
+            : 0;
+
+        // Promedio por tipo de test
+        const avgByType = {};
+        activeTestIds.forEach(typeId => {
+            const studentsWithType = students.filter(s => s.scoresByType[typeId] !== undefined);
+            if (studentsWithType.length > 0) {
+                const sum = studentsWithType.reduce((acc, s) => acc + s.scoresByType[typeId], 0);
+                avgByType[typeId] = Math.round((sum / studentsWithType.length) * 10) / 10;
+            }
+        });
+
+        const typeEntries = Object.entries(avgByType);
+        const bestType = typeEntries.length > 0 ? typeEntries.reduce((a, b) => a[1] > b[1] ? a : b) : null;
+        const worstType = typeEntries.length > 0 ? typeEntries.reduce((a, b) => a[1] < b[1] ? a : b) : null;
+
+        const approvedCount = students.filter(s => s.status === 'approved').length;
+        const approvalRate = totalStudents > 0 ? Math.round((approvedCount / totalStudents) * 100) : 0;
+
+        return {
+            students,
+            kpis: {
+                totalStudents,
+                overallAvg,
+                bestType: bestType ? { id: bestType[0], avg: bestType[1] } : null,
+                worstType: worstType ? { id: worstType[0], avg: worstType[1] } : null,
+                approvedCount,
+                approvalRate
+            },
+            avgByType,
+            activeTestIds
+        };
+    }, [allResults, isAdmin, groupAnalyticsFilter, groupMembers, testTypes]);
+
     return {
         user, view, setView, studentName, setStudentName, email, setEmail, isLoggedIn, setIsLoggedIn,
         testType, setTestType, currentQuestion, setCurrentQuestion, answers, setAnswers, finalScore, setFinalScore,
@@ -778,6 +872,6 @@ export const useAppLogic = () => {
         groupView, setGroupView, isGroupsLoading, setIsGroupsLoading, loginGroupId, setLoginGroupId,
         handleLogin, handleCreateGroup, handleAddMember, handleDeleteMember, handleToggleGroupTest,
         handleToggleGroupSurvey, handleStartTest, handleAnswer, handleSurveySubmit,
-        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, COLORS
+        filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, examSummaryData, COLORS
     };
 };

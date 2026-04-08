@@ -585,3 +585,67 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Criterio de Aceptación 3:** Se mantiene un fallback local en caso de que la conexión a la base de datos falle.
 - **Criterio de Aceptación 4:** El administrador puede ver y gestionar estas encuestas en el panel de detalle de cada grupo de forma dinámica.
 
+---
+
+### HU-25: Vista de Resultados Generales de Exámenes con Ponderación
+
+**Como** administrador o coordinador de evaluaciones
+**Quiero** visualizar un resumen general consolidado de los resultados de todos los exámenes que han presentado los alumnos, con un porcentaje general ponderado
+**Para** evaluar el desempeño global del equipo en todas las evaluaciones y tomar decisiones informadas sobre las capacitaciones.
+
+#### Sub-Historias
+
+##### HU-25a: Cálculo del Porcentaje General Ponderado por Alumno
+- El sistema calcula el mejor puntaje de cada alumno por tipo de test.
+- El porcentaje general se obtiene promediando los mejores puntajes de los tipos presentados.
+- Se identifican exámenes pendientes por alumno.
+
+##### HU-25b: Tarjetas KPI de Resumen Global
+- Total de Alumnos Evaluados (únicos).
+- Porcentaje General Ponderado del equipo.
+- Mejor Evaluación (tipo de test con mayor promedio).
+- Mayor Oportunidad (tipo de test con menor promedio).
+- Tasa de aprobación (≥ 70%).
+
+##### HU-25c: Tabla Resumen por Alumno con Desglose
+- Cada fila muestra un alumno con columnas por tipo de test y porcentaje general.
+- Codificación de colores: ≥90% verde intenso, 70-89% verde, 40-69% ámbar, <40% rojo.
+- Estatus Aprobado (≥70%) / En revisión (<70%).
+- La tabla es ordenable por cualquier columna.
+
+##### HU-25d: Gauge Visual de Porcentaje General de la Cohorte
+- Gauge SVG semicircular animado con el porcentaje general del equipo.
+- Color y etiqueta adaptados al rango (Excelente/Competente/En desarrollo/Requiere atención).
+
+##### HU-25e: Navegación e Integración con Dashboard
+- Tercer tab "Resultados Generales" en la sección de Analíticas (solo admin).
+- Los filtros de tipo de test/encuesta se ocultan al seleccionar esta pestaña.
+- Compatible con dark mode, responsive, y filtro de grupo.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Acceso al tab de Resultados Generales**
+- **Dado** que soy administrador y estoy en el Dashboard
+- **Cuando** veo la sección "Analíticas de la Plataforma"
+- **Entonces** debo ver tres pestañas: "Evaluaciones", "Encuestas" y "Resultados Generales".
+
+**Criterio de Aceptación 2: KPIs y Gauge correctos**
+- **Dado** que existen resultados en la plataforma
+- **Cuando** selecciono "Resultados Generales"
+- **Entonces** debo ver tarjetas KPI con datos reales, un gauge animado con el promedio general, y conteo de aprobados/en revisión.
+
+**Criterio de Aceptación 3: Tabla con desglose por alumno**
+- **Dado** que hay múltiples alumnos con resultados
+- **Cuando** visualizo la tabla
+- **Entonces** cada fila debe mostrar el mejor puntaje por tipo de test, el porcentaje general ponderado, y el estatus, con colores según rango.
+
+**Criterio de Aceptación 4: Filtro de grupo compatible**
+- **Dado** que selecciono un grupo en el filtro superior
+- **Cuando** estoy en "Resultados Generales"
+- **Entonces** los datos deben reflejar únicamente a los miembros del grupo seleccionado.
+
+**Criterio de Aceptación 5: Restricción a estudiantes**
+- **Dado** que soy un usuario con rol estándar (estudiante)
+- **Cuando** accedo al Dashboard
+- **Entonces** no debo ver la pestaña "Resultados Generales".
+
