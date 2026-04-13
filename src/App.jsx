@@ -42,7 +42,7 @@ function App() {
         handleAddMember, handleDeleteMember, handleSurveySubmit,
         handleStartTest, testType, loginGroupId, setLoginGroupId,
         fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter,
-        questionDetailData, examSummaryData, studentSummaryData
+        questionDetailData, examSummaryData, studentSummaryData, handleUpdateTestDefaultScore
     } = useAppLogic();
 
     return (
@@ -58,6 +58,7 @@ function App() {
                 darkMode={darkMode}
                 testTypes={testTypes}
                 handleStartTest={handleStartTest}
+                setGroupView={setGroupView}
             />
 
             <main className="container mx-auto px-4 max-w-6xl pt-12">

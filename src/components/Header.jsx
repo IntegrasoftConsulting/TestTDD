@@ -1,7 +1,7 @@
 import React from 'react';
 import { ClipboardCheck, Sun, Moon } from 'lucide-react';
 
-const Header = ({ darkMode, setDarkMode, isLoggedIn, isAdmin, view, setView, testTypes, testType, handleStartTest }) => {
+const Header = ({ darkMode, setDarkMode, isLoggedIn, isAdmin, view, setView, testTypes, testType, handleStartTest, setGroupView }) => {
     return (
         <header className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex justify-between items-center w-full md:w-auto">
