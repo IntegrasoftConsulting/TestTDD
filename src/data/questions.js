@@ -113,3 +113,61 @@ export const QUESTIONS_BDD = [
         correct: 3
     }
 ];
+
+export const QUESTIONS_DDD = [
+    {
+        id: 1,
+        question: "¿Cuál es el objetivo principal del Domain Driven Design (DDD)?",
+        options: [
+            "Modelar software complejo alineando el diseño técnico con el modelo de negocio o dominio.",
+            "Optimizar la velocidad de las consultas SQL mediante el particionamiento de tablas.",
+            "Asegurar que todas las clases del sistema tengan menos de 100 líneas de código.",
+            "Facilitar la migración de aplicaciones monolíticas a sistemas de microservicios sin cambios de dominio."
+        ],
+        correct: 0
+    },
+    {
+        id: 2,
+        question: "En DDD, ¿qué representa un 'Bounded Context' (Contexto Delimitado)?",
+        options: [
+            "Un servidor físico donde se despliega una parte del sistema.",
+            "Un límite explícito dentro del cual un modelo de dominio tiene un significado y reglas específicas.",
+            "El historial de commits del repositorio de código.",
+            "Una restricción de base de datos que impide la inserción de datos duplicados."
+        ],
+        correct: 1
+    },
+    {
+        id: 3,
+        question: "¿Cuál es la diferencia fundamental entre una Entidad y un Value Object?",
+        options: [
+            "Las Entidades se guardan en base de datos y los Value Objects no.",
+            "Las Entidades tienen una identidad única que persiste en el tiempo, mientras que los Value Objects se definen solo por sus atributos.",
+            "Los Value Objects siempre son clases abstractas y las Entidades son finales.",
+            "No hay diferencia; ambos términos son sinónimos en el modelado táctico."
+        ],
+        correct: 1
+    },
+    {
+        id: 4,
+        question: "¿Qué patrón de DDD se utiliza para asegurar la consistencia y tratar un grupo de objetos relacionados como una unidad de persistencia?",
+        options: [
+            "Singleton",
+            "Factory Method",
+            "Aggregate (Agregado)",
+            "Observer Pattern"
+        ],
+        correct: 2
+    },
+    {
+        id: 5,
+        question: "¿Qué es el 'Ubiquitous Language' (Lenguaje Ubicuo)?",
+        options: [
+            "Un lenguaje de programación universal para frontend y backend.",
+            "Un lenguaje común compartido entre expertos del dominio y desarrolladores para eliminar ambigüedades.",
+            "La documentación técnica generada automáticamente a partir del código.",
+            "Un estándar de traducción para aplicaciones multinacionales."
+        ],
+        correct: 1
+    }
+];

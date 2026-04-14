@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 // Cache Burster v1.7 - 2026-03-17 15:58
 import { supabase } from '../supabaseClient';
-import { QUESTIONS_TDD, QUESTIONS_BDD } from '../data/questions';
+import { QUESTIONS_TDD, QUESTIONS_BDD, QUESTIONS_DDD } from '../data/questions';
 import { AVAILABLE_SURVEYS } from '../data/surveys';
 
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e'];
@@ -22,10 +22,11 @@ export const useAppLogic = () => {
     const [error, setError] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [analyticsFilter, setAnalyticsFilter] = useState('TODO');
-    const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true });
+    const [testConfig, setTestConfig] = useState({ TDD: true, BDD: true, DDD: true });
     const [testTypes, setTestTypes] = useState([
         { test_id: 'TDD', display_name: 'Test TDD', description: 'Test Driven Development', order_index: 1, is_active: true },
-        { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true }
+        { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true },
+        { test_id: 'DDD', display_name: 'Test DDD', description: 'Domain Driven Design', order_index: 4, is_active: true }
     ]);
     const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true });
     const [availableSurveys, setAvailableSurveys] = useState(AVAILABLE_SURVEYS);
@@ -164,7 +165,8 @@ export const useAppLogic = () => {
     const fetchConfig = useCallback(async () => {
         const DEFAULT_TEST_TYPES = [
             { test_id: 'TDD', display_name: 'Test TDD', description: 'Test Driven Development', order_index: 1, is_active: true },
-            { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true }
+            { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true },
+            { test_id: 'DDD', display_name: 'Test DDD', description: 'Domain Driven Design', order_index: 4, is_active: true }
         ];
         try {
             const { data, error: confError } = await supabase
@@ -409,6 +411,14 @@ export const useAppLogic = () => {
         setError(null);
 
         try {
+            if (!supabase) {
+                console.warn('[HU-28] Supabase no está inicializado. Continuando en modo desconectado.');
+                setIsAdmin(false);
+                setIsLoggedIn(true);
+                setIsSaving(false);
+                return;
+            }
+
             const { data, error: adminError } = await supabase
                 .from('admin_users')
                 .select('email')
@@ -528,7 +538,12 @@ export const useAppLogic = () => {
         setQuestionsLoading(true);
         setView('quiz');
 
-        const fallback = type === 'TDD' ? QUESTIONS_TDD : QUESTIONS_BDD;
+        const FALLBACK_MAP = {
+            'TDD': QUESTIONS_TDD,
+            'BDD': QUESTIONS_BDD,
+            'DDD': QUESTIONS_DDD
+        };
+        const fallback = FALLBACK_MAP[type] || QUESTIONS_TDD;
 
         if (supabase) {
             try {

@@ -723,3 +723,63 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que un puntaje en la tabla de resultados proviene de un test no presentado
 - **Cuando** se visualiza la tabla de detalles
 - **Entonces** el sistema debe mostrar un indicador claro (ej. etiqueta "Default" o color distintivo) para diferenciarlo de un resultado obtenido mediante un examen realizado.
+
+---
+
+### HU-28: Evaluación de Domain Driven Design (DDD)
+
+**Como** estudiante de ingeniería
+**Quiero** realizar una evaluación sobre los conceptos de Domain Driven Design (DDD)
+**Para** certificar mi dominio en el modelado táctico (Entidades, Agregados, Value Objects) y estratégico (Bounded Contexts, Ubiquitous Language) del software.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Disponibilidad en navegación dinámica**
+- **Dado** que el administrador ha activado el test DDD en `test_config`
+- **Cuando** un estudiante carga la aplicación
+- **Entonces** debe visualizar el botón "Test DDD" en la barra de navegación superior.
+
+**Criterio de Aceptación 2: Carga de preguntas desde Supabase**
+- **Dado** que el usuario inicia el test DDD
+- **Cuando** se carga el cuestionario
+- **Entonces** las preguntas y opciones deben recuperarse de la tabla `questions` filtradas por `test_type = 'DDD'`.
+
+**Criterio de Aceptación 3: Registro de resultados y analíticas**
+- **Dado** que el estudiante finaliza la evaluación de DDD
+- **Cuando** confirma el envío
+- **Entonces** el puntaje debe persistir en la tabla `results` y ser visible en todas las secciones de analíticas y reportes ponderados.
+
+**Criterio de Aceptación 4: Configuración de puntaje base**
+- **Dado** que se ha definido un puntaje por defecto para DDD en `test_config`
+- **Cuando** el alumno no ha presentado este test
+- **Entonces** su promedio general ponderado debe incluir dicho valor base según HU-27.
+
+---
+
+### HU-29: Nueva Encuesta de Domain Driven Design (DDD)
+
+**Como** administrador o capacitador
+**Quiero** disponer de una encuesta específica para la sesión de Domain Driven Design (DDD)
+**Para** recolectar feedback de los estudiantes sobre los conceptos de diseño orientado al dominio, lenguajes ubicuos y agregados enseñados en la sesión.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Registro en configuración de encuestas**
+- **Dado** que se realiza la configuración inicial de la plataforma
+- **Cuando** se consultan las encuestas disponibles
+- **Entonces** debe existir el identificador `DDD_SESSION` con su respectivo estado de activación en la tabla `survey_config`.
+
+**Criterio de Aceptación 2: Gestión por Grupo**
+- **Dado** que el administrador está configurando un grupo
+- **Cuando** accede a la sección de "Encuestas del Grupo"
+- **Entonces** debe aparecer la opción "DDD_SESSION" para ser habilitada o deshabilitada específicamente para ese grupo.
+
+**Criterio de Aceptación 3: Visualización para Estudiantes**
+- **Dado** que un estudiante pertenece a un grupo con la encuesta `DDD_SESSION` activa
+- **Cuando** navega a la sección de encuestas
+- **Entonces** debe poder seleccionar y completar el formulario de satisfacción para DDD.
+
+**Criterio de Aceptación 4: Integración en Analíticas**
+- **Dado** que se han recibido respuestas para la encuesta DDD
+- **Cuando** el administrador revisa el Dashboard de Satisfacción
+- **Entonces** el sistema debe calcular y mostrar los promedios de "Contenido", "Instructor" y "Práctica" específicos para la sesión de DDD.
