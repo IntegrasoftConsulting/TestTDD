@@ -28,7 +28,7 @@ export const useAppLogic = () => {
         { test_id: 'BDD', display_name: 'Test BDD', description: 'Behavior Driven Development', order_index: 2, is_active: true },
         { test_id: 'DDD', display_name: 'Test DDD', description: 'Domain Driven Design', order_index: 4, is_active: true }
     ]);
-    const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true });
+    const [surveyConfig, setSurveyConfig] = useState({ TDD_SESSION: true, BDD_SESSION: true, DDD_SESSION: true });
     const [availableSurveys, setAvailableSurveys] = useState(AVAILABLE_SURVEYS);
     const [surveyData, setSurveyData] = useState({ survey_id: '', rating_content: 0, rating_instructor: 0, rating_practical: 0, comments: '' });
     const [surveySubmitting, setSurveySubmitting] = useState(false);
