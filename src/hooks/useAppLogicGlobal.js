@@ -953,6 +953,94 @@ export const useAppLogic = () => {
         };
     }, [allResults, isAdmin, isLoggedIn, email, testTypes]);
 
+    // HU-32: Estado y lógica de certificados
+    const [certificate, setCertificate] = useState(null);   // datos del cert emitido o null
+    const [certLoading, setCertLoading] = useState(false);
+
+    const fetchCertificate = useCallback(async () => {
+        if (!email || isAdmin) return;
+        try {
+            const { data, error: certErr } = await supabase
+                .from('certificates')
+                .select('*')
+                .eq('user_email', email)
+                .maybeSingle();
+            if (!certErr && data) setCertificate(data);
+        } catch (err) {
+            console.warn('[HU-32] No se pudo cargar el certificado:', err);
+        }
+    }, [email, isAdmin]);
+
+    // Elegibilidad: ≥70% ponderado y TODOS los tests completados
+    const certEligibility = useMemo(() => {
+        if (!studentSummaryData || isAdmin) return null;
+        const { generalPct, pendingTypes, completedTypes, totalTypes, testDetails } = studentSummaryData;
+        const allCompleted = completedTypes === totalTypes;
+        const passes = generalPct >= 70;
+        return {
+            eligible: allCompleted && passes,
+            score: generalPct,
+            allCompleted,
+            passes,
+            missingTests: (pendingTypes || []).map(id => {
+                const t = (testTypes || []).find(tt => tt.test_id === id);
+                return t?.display_name || id;
+            })
+        };
+    }, [studentSummaryData, isAdmin, testTypes]);
+
+    // Fetch certificate when student logs in
+    useEffect(() => {
+        if (isLoggedIn && !isAdmin && view === 'dashboard') fetchCertificate();
+    }, [isLoggedIn, isAdmin, view, fetchCertificate]);
+
+    const handleGenerateCertificate = useCallback(async () => {
+        if (!certEligibility?.eligible || !studentSummaryData) return null;
+        setCertLoading(true);
+        try {
+            // Construir detalle de puntajes
+            const scoreDetail = {};
+            (studentSummaryData.testDetails || []).forEach(t => {
+                scoreDetail[t.testId] = t.isPending ? null : Math.round(t.bestScore);
+            });
+
+            const payload = {
+                user_email: email,
+                student_name: studentName,
+                weighted_score: studentSummaryData.generalPct,
+                group_id: userGroupId || null,
+                score_detail: scoreDetail
+            };
+
+            const { data: existing } = await supabase
+                .from('certificates')
+                .select('certificate_id, issued_at')
+                .eq('user_email', email)
+                .maybeSingle();
+
+            if (existing) {
+                setCertificate({ ...existing, ...payload, student_name: studentName });
+                return { ...existing, ...payload };
+            }
+
+            const { data, error: certErr } = await supabase
+                .from('certificates')
+                .insert([payload])
+                .select()
+                .single();
+
+            if (certErr) throw certErr;
+            setCertificate(data);
+            return data;
+        } catch (err) {
+            console.error('[HU-32] Error al generar certificado:', err);
+            setError('No se pudo generar el certificado. Intenta de nuevo.');
+            return null;
+        } finally {
+            setCertLoading(false);
+        }
+    }, [certEligibility, studentSummaryData, email, studentName, userGroupId, setError]);
+
     // HU-27: Actualizar puntaje por defecto de un test
     const handleUpdateTestDefaultScore = useCallback(async (testId, newScore) => {
         try {
@@ -987,6 +1075,9 @@ export const useAppLogic = () => {
         handleLogin, handleCreateGroup, handleAddMember, handleDeleteMember, handleToggleGroupTest,
         handleToggleGroupSurvey, handleStartTest, handleAnswer, handleSurveySubmit,
         handleUpdateTestDefaultScore,
+        // HU-32
+        certificate, certLoading, certEligibility,
+        handleGenerateCertificate,
         filteredAnalyticsData, stats, passRateData, trendsData, questionDetailData, surveyMetrics, examSummaryData, studentSummaryData, COLORS
     };
 };

@@ -756,6 +756,91 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 
 ---
 
+### HU-30: Evaluación de Spec Driven Development (SDD) con enfoque en AI Driven Development
+
+**Como** estudiante de ingeniería de software
+**Quiero** realizar una evaluación sobre los conceptos de Spec Driven Development (SDD) con foco en AI Driven Development
+**Para** certificar mi comprensión de cómo el diseño basado en especificaciones potencia el desarrollo asistido por inteligencia artificial, incluyendo técnicas de prompting, generación de código y flujos de trabajo centrados en especificaciones formales.
+
+> **Nota técnica:** Esta HU es habilitada íntegramente por datos en Supabase. No requiere cambios de código en la aplicación gracias a la parametrización implementada en HU-14 (preguntas dinámicas) y HU-15 (tipos de test dinámicos). La implementación consiste en ejecutar el script `setup_sdd_survey.sql`.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Disponibilidad en navegación dinámica (Camino Feliz)**
+- **Dado** que el administrador ha activado el test SDD en la tabla `test_config`
+- **Cuando** un usuario autenticado carga la aplicación
+- **Entonces** debe visualizar el botón **"Test SDD"** en la barra de navegación superior, junto a los demás tipos de test activos
+- **Y** al hacer clic debe iniciarse un cuestionario con las preguntas del test SDD cargadas desde la tabla `questions`.
+
+**Criterio de Aceptación 2: Contenido de las preguntas SDD/AI Driven Development**
+- **Dado** que el usuario inicia el Test SDD
+- **Cuando** responde el cuestionario
+- **Entonces** debe encontrar 5 preguntas de selección múltiple que evalúen la comprensión de los siguientes conceptos clave:
+  - **Spec First** — Principio de escribir la especificación antes de codificar (specs como contrato entre humano e IA)
+  - **Prompt Engineering** — Técnicas para estructurar prompts efectivos a partir de una especificación formal
+  - **AI-Augmented TDD** — Integración de ciclos Red-Green-Refactor con herramientas de IA (ej. Copilot, Gemini, Cursor)
+  - **Agentic Workflows** — Flujos de trabajo multi-agente (PO, Arquitecto, Desarrollador) orquestados por especificaciones
+  - **Validación de Outputs de IA** — Estrategias para verificar que el código generado por IA cumple con las specs definidas
+
+**Criterio de Aceptación 3: Carga de preguntas desde Supabase**
+- **Dado** que el usuario inicia el test SDD
+- **Cuando** se carga el cuestionario
+- **Entonces** las preguntas y opciones deben recuperarse de la tabla `questions` filtradas por `test_type = 'SDD'`
+- **Y** solo deben mostrarse las preguntas con `is_active = true`, ordenadas por `order_index`.
+
+**Criterio de Aceptación 4: Registro de resultados y analíticas**
+- **Dado** que el estudiante finaliza la evaluación de SDD
+- **Cuando** confirma su última respuesta
+- **Entonces** el puntaje debe persistir en la tabla `results` con `testType = 'SDD'`
+- **Y** el resultado debe ser visible en el Dashboard del usuario (HU-26) y en el panel del administrador (HU-25), incluyendo el desglose por pregunta (HU-19).
+
+**Criterio de Aceptación 5: Configuración de puntaje base para pendientes**
+- **Dado** que se ha configurado un puntaje por defecto para SDD en `test_config` (según HU-27)
+- **Cuando** un alumno aún no ha presentado este test
+- **Entonces** su promedio general ponderado debe incluir dicho valor base
+- **Y** el resultado proyectado debe mostrarse con el indicador visual "Default" para diferenciarlo de un puntaje real.
+
+**Criterio de Aceptación 6: Gestión y disponibilidad por el Administrador**
+- **Dado** que el test SDD está registrado en `test_config` con `is_active = true`
+- **Cuando** el administrador lo deshabilita (`is_active = false`) desde su panel de control (HU-17)
+- **Entonces** el botón "Test SDD" debe desaparecer o mostrarse como bloqueado para los estudiantes
+- **Y** el comportamiento debe ser idéntico al de los demás tests (TDD, BDD, SOLID, DDD), garantizando consistencia total.
+
+---
+
+### HU-31: Nueva Encuesta de Spec Driven Development (SDD)
+
+**Como** administrador o capacitador
+**Quiero** disponer de una encuesta de satisfacción específica para la sesión de Spec Driven Development (SDD)
+**Para** recolectar feedback de los estudiantes sobre los conceptos de desarrollo basado en especificaciones y flujos de trabajo con inteligencia artificial enseñados en la sesión.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Registro en configuración de encuestas**
+- **Dado** que se realiza la configuración inicial de la plataforma mediante el script `setup_sdd_survey.sql`
+- **Cuando** se consultan las encuestas disponibles en la tabla `survey_config`
+- **Entonces** debe existir el identificador `SDD_SESSION` con su nombre de visualización (ej. `"Encuesta SDD"`) y su respectivo estado de activación.
+
+**Criterio de Aceptación 2: Gestión por Grupo**
+- **Dado** que el administrador está configurando un grupo
+- **Cuando** accede a la sección de "Encuestas del Grupo"
+- **Entonces** debe aparecer la opción **"SDD_SESSION"** para ser habilitada o deshabilitada específicamente para ese grupo
+- **Y** el comportamiento debe ser consistente con la gestión de las encuestas TDD_SESSION, BDD_SESSION y DDD_SESSION (HU-22, HU-24).
+
+**Criterio de Aceptación 3: Visualización para Estudiantes**
+- **Dado** que un estudiante pertenece a un grupo con la encuesta `SDD_SESSION` activa
+- **Cuando** navega a la sección de encuestas
+- **Entonces** debe poder seleccionar y completar el formulario de satisfacción para la sesión SDD
+- **Y** el formulario debe permitir calificar los aspectos: Claridad del expositor, Utilidad del contenido de IA, Calidad de los ejercicios prácticos con IA, y dejar un comentario abierto.
+
+**Criterio de Aceptación 4: Integración en Analíticas**
+- **Dado** que se han recibido respuestas para la encuesta SDD
+- **Cuando** el administrador revisa el Dashboard de Satisfacción (HU-12)
+- **Entonces** el sistema debe calcular y mostrar los promedios de "Contenido", "Instructor" y "Práctica" específicos para la sesión de SDD
+- **Y** los datos deben ser comparables visualmente con los promedios de las demás sesiones (TDD, BDD, DDD).
+
+---
+
 ### HU-29: Nueva Encuesta de Domain Driven Design (DDD)
 
 **Como** administrador o capacitador
@@ -783,3 +868,92 @@ A continuación se detallan las Historias de Usuario (HU) de las funcionalidades
 - **Dado** que se han recibido respuestas para la encuesta DDD
 - **Cuando** el administrador revisa el Dashboard de Satisfacción
 - **Entonces** el sistema debe calcular y mostrar los promedios de "Contenido", "Instructor" y "Práctica" específicos para la sesión de DDD.
+
+---
+
+### HU-32: Certificado de Aprobación — Modern Software Craftsmanship
+
+**Como** estudiante que ha completado y aprobado las evaluaciones de la plataforma
+**Quiero** poder generar y descargar un certificado digital de aprobación del curso **"Modern Software Craftsmanship"**
+**Para** acreditar formalmente ante mi organización o equipo que he demostrado competencia en las disciplinas de TDD, BDD, SOLID, DDD y SDD/AI-Driven Development evaluadas durante el programa.
+
+> **Sobre el nombre del curso:** *Modern Software Craftsmanship* engloba el conjunto de prácticas de ingeniería evaluadas en la plataforma: desarrollo guiado por pruebas (TDD/BDD), principios de diseño (SOLID), arquitectura orientada al dominio (DDD) y desarrollo asistido por especificaciones e IA (SDD). Es la identidad académica del programa.
+
+#### Criterios de Aceptación
+
+**Criterio de Aceptación 1: Condición de elegibilidad para el certificado (Regla de Negocio)**
+- **Dado** que un estudiante ha completado todos los tests activos de la plataforma
+- **Cuando** el sistema evalúa su elegibilidad
+- **Entonces** el certificado solo debe estar disponible si el **porcentaje general ponderado** (calculado según HU-25/HU-26) es **≥ 70%**
+- **Y** si el estudiante tiene tests pendientes (no presentados), el sistema debe mostrar un aviso indicando qué evaluaciones faltan antes de poder obtener el certificado.
+
+**Criterio de Aceptación 2: Generación y descarga del certificado (Camino Feliz)**
+- **Dado** que el estudiante cumple la condición de elegibilidad
+- **Cuando** hace clic en el botón **"Obtener mi Certificado"** visible en su Dashboard
+- **Entonces** el sistema debe generar un certificado en formato **PDF o imagen (PNG)** que incluya:
+  - Logotipo e identidad visual de la plataforma
+  - Nombre completo del estudiante (tal como aparece en su perfil)
+  - Nombre del curso: **"Modern Software Craftsmanship"**
+  - Lista de evaluaciones aprobadas con su puntaje individual (TDD, BDD, SOLID, DDD, SDD)
+  - Porcentaje general ponderado obtenido
+  - Fecha de emisión del certificado
+  - Un **código único de verificación** (UUID) para autenticar la validez del documento
+- **Y** el certificado debe descargarse automáticamente al dispositivo del usuario.
+
+**Criterio de Aceptación 3: Visualización del estado de certificación en el Dashboard**
+- **Dado** que un estudiante accede a su Dashboard
+- **Cuando** visualiza la sección de "Mi Resumen de Notas" (HU-26)
+- **Entonces** debe existir una sección o tarjeta de **"Estado de Certificación"** que muestre:
+  - ✅ **Certificado disponible** — Si cumple la condición (≥ 70% ponderado y todos los tests completados)
+  - ⏳ **En progreso** — Con la lista de tests pendientes o por mejorar
+  - ❌ **No elegible** — Si el promedio ponderado es < 70%, con un mensaje motivacional
+
+**Criterio de Aceptación 4: Registro del certificado emitido en Supabase**
+- **Dado** que el estudiante genera su certificado exitosamente
+- **Cuando** la operación se completa
+- **Entonces** el sistema debe guardar un registro en la tabla `certificates` con:
+  - `certificate_id` (UUID único — código de verificación)
+  - `user_email`
+  - `student_name`
+  - `weighted_score` (porcentaje general en el momento de emisión)
+  - `issued_at` (timestamp de generación)
+  - `group_id` (grupo del estudiante al momento de la emisión)
+- **Y** si el estudiante intenta generar el certificado nuevamente, el sistema debe reutilizar el código UUID existente (idempotente).
+
+**Criterio de Aceptación 5: Página pública de verificación de certificado**
+- **Dado** que un tercero (ej. un reclutador o coordinador) recibe un certificado
+- **Cuando** accede a la URL de verificación (`/verify/{certificate_id}`) con el código único
+- **Entonces** debe ver una página pública (sin necesidad de autenticación) que muestre:
+  - Nombre del estudiante y del curso
+  - Puntaje general y fecha de emisión
+  - Indicador visual de **"Certificado Válido"** o **"Certificado No Encontrado"**
+
+**Criterio de Aceptación 6: Configuración del umbral de certificación por el Administrador**
+- **Dado** que el administrador accede al panel de control de la plataforma
+- **Cuando** configura los parámetros del programa
+- **Entonces** debe poder establecer:
+  - El **porcentaje mínimo ponderado** requerido para obtener el certificado (por defecto 70%)
+  - La **lista de tests obligatorios** que deben estar completados para la elegibilidad (por defecto: todos los activos del grupo)
+- **Y** estos parámetros deben persistir en Supabase y aplicarse en tiempo real sin cambios de código.
+
+**Criterio de Aceptación 7: Restricción de acceso — Solo estudiantes elegibles**
+- **Dado** que un estudiante con promedio < 70% o con tests pendientes accede al Dashboard
+- **Cuando** visualiza la sección de certificación
+- **Entonces** el botón "Obtener mi Certificado" debe estar **deshabilitado o no visible**
+- **Y** el sistema debe mostrar claramente qué condición impide la certificación, con indicadores de progreso hacia la elegibilidad.
+
+#### Schema de base de datos requerido
+
+```sql
+-- Tabla de certificados emitidos
+CREATE TABLE public.certificates (
+    certificate_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_email      TEXT NOT NULL,
+    student_name    TEXT NOT NULL,
+    weighted_score  NUMERIC(5,2) NOT NULL,
+    group_id        UUID REFERENCES public.groups(group_id),
+    issued_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_email)   -- un certificado por estudiante (idempotente)
+);
+```
+

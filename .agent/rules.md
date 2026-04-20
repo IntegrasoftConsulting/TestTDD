@@ -20,3 +20,9 @@ Estas reglas son de cumplimiento obligatorio para cualquier agente de IA o desar
 ## 4. Estilo de Código y UI
 - Mantener el diseño premium solicitado: Gradientes suaves, sombras sutiles, micro-animaciones (lucide-react + tailwind).
 - Uso coherente del Modo Oscuro (`dark:` clases).
+ 
++## 5. Protocolo del Agente Experto UI/UX
++- **Herramienta Primaria:** Los diseños se prototipan en **Stitch** usando prompts optimizados (`enhance-prompt`).
++- **Source of Truth:** El archivo `DESIGN.md` es el contrato de diseño entre UI/UX y Desarrollo. Cualquier cambio en estilos debe reflejarse primero allí.
++- **Handoff:** Para la entrega a desarrollo, el agente debe proporcionar los tokens semánticos (colores, tipografía, bordes) y, opcionalmente, convertir pantallas a componentes React modulares.
++- **Iteración:** Se deben generar variantes de pantallas críticas antes de proceder a la implementación final.

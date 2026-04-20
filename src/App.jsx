@@ -8,6 +8,7 @@ import ResultView from './components/ResultView';
 import DashboardView from './components/DashboardView';
 import GroupManager from './components/GroupManager';
 import SurveyManager from './components/SurveyManager';
+import CertificateVerifyView from './components/CertificateVerifyView';
 
 function App() {
     const {
@@ -42,8 +43,15 @@ function App() {
         handleAddMember, handleDeleteMember, handleSurveySubmit,
         handleStartTest, testType, loginGroupId, setLoginGroupId,
         fetchGroupDetails, groupMembers, groupAnalyticsFilter, setGroupAnalyticsFilter,
-        questionDetailData, examSummaryData, studentSummaryData, handleUpdateTestDefaultScore
+        questionDetailData, examSummaryData, studentSummaryData, handleUpdateTestDefaultScore,
+        certificate, certLoading, certEligibility, handleGenerateCertificate
     } = useAppLogic();
+
+    // HU-32: Interceptar vista verificador público de certificado
+    const certIdParam = new URLSearchParams(window.location.search).get('cert');
+    if (certIdParam) {
+        return <CertificateVerifyView certId={certIdParam} darkMode={darkMode} />;
+    }
 
     return (
         <div className={`min-h-screen transition-colors duration-500 pb-20 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900/50 ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
@@ -106,6 +114,11 @@ function App() {
                         examSummaryData={examSummaryData}
                         studentSummaryData={studentSummaryData}
                         handleStartTest={handleStartTest}
+                        studentName={studentName}
+                        certificate={certificate}
+                        certLoading={certLoading}
+                        certEligibility={certEligibility}
+                        handleGenerateCertificate={handleGenerateCertificate}
                     />
                 )}
 

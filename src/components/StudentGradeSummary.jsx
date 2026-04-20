@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GraduationCap, CheckCircle, AlertTriangle, Clock, Award, Zap, ArrowRight } from 'lucide-react';
+import CertificateCard from './CertificateCard';
 
 // Mini gauge reutilizable para el estudiante
 const StudentGauge = ({ value, size = 180, darkMode }) => {
@@ -93,7 +94,10 @@ const getBarGradient = (score) => {
     return 'linear-gradient(90deg, #ef4444, #f87171)';
 };
 
-const StudentGradeSummary = ({ studentSummaryData, darkMode, setView, handleStartTest, testTypes }) => {
+const StudentGradeSummary = ({ 
+    studentSummaryData, darkMode, setView, handleStartTest, testTypes,
+    certEligibility, certificate, certLoading, onGenerate, studentName 
+}) => {
     // CA-4: Sin resultados — estado vacío motivacional
     if (!studentSummaryData) {
         return (
@@ -257,6 +261,20 @@ const StudentGradeSummary = ({ studentSummaryData, darkMode, setView, handleStar
                         </div>
                     ))}
                 </div>
+                </div>
+
+                {/* HU-32: Certificado Digital */}
+                {certEligibility && (
+                    <CertificateCard
+                        certEligibility={certEligibility}
+                        certificate={certificate}
+                        certLoading={certLoading}
+                        onGenerate={onGenerate}
+                        studentName={studentName}
+                        darkMode={darkMode}
+                        testDetails={testDetails}
+                    />
+                )}
             </div>
         </div>
     );

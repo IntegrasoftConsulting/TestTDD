@@ -9,7 +9,8 @@ const DashboardView = ({
     analyticsFilter, setAnalyticsFilter, passRateData, COLORS, trendsData, darkMode,
     surveyMetrics, questionDetailData, filteredAnalyticsData = [],
     surveyFilter, setSurveyFilter, availableSurveys = [],
-    examSummaryData, studentSummaryData, handleStartTest
+    examSummaryData, studentSummaryData, handleStartTest,
+    studentName, certificate, certLoading, certEligibility, handleGenerateCertificate
 }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -52,6 +53,11 @@ const DashboardView = ({
                     setView={setView}
                     handleStartTest={handleStartTest}
                     testTypes={testTypes}
+                    studentName={studentName}
+                    certificate={certificate}
+                    certLoading={certLoading}
+                    certEligibility={certEligibility}
+                    onGenerate={handleGenerateCertificate}
                 />
             )}
 
