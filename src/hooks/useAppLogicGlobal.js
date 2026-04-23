@@ -908,12 +908,15 @@ export const useAppLogic = () => {
 
         const activeTestIds = (testTypes || []).filter(t => t.is_active).map(t => t.test_id);
 
-        // Mejor puntaje por tipo de test
+        // Mejor puntaje por tipo de test (Case Insensitive mapping)
         const scoresByType = {};
         const attemptsByType = {};
         myResults.forEach(r => {
-            const type = r.testType?.trim() || 'TDD';
-            if (!scoresByType[type] || r.score > scoresByType[type]) {
+            const rawType = r.testType?.trim() || 'TDD';
+            const matchedTestType = (testTypes || []).find(t => t.test_id.toUpperCase() === rawType.toUpperCase());
+            const type = matchedTestType ? matchedTestType.test_id : rawType;
+
+            if (scoresByType[type] === undefined || r.score > scoresByType[type]) {
                 scoresByType[type] = r.score;
             }
             attemptsByType[type] = (attemptsByType[type] || 0) + 1;
@@ -933,13 +936,15 @@ export const useAppLogic = () => {
         const totalActive = activeTestIds.length;
         const generalPct = totalActive > 0 ? Math.round((sumTotalWithDefaults / totalActive) * 10) / 10 : 0;
 
-        // Detalle por tipo
-        const testDetails = activeTestIds.map(typeId => {
+        // Detalle por tipo (incluir tests inactivos que ya fueron presentados)
+        const allRelevantTypes = Array.from(new Set([...activeTestIds, ...presentedTypes]));
+
+        const testDetails = allRelevantTypes.map(typeId => {
             const testInfo = (testTypes || []).find(t => t.test_id === typeId);
             const isPending = scoresByType[typeId] === undefined;
             return {
                 testId: typeId,
-                displayName: testInfo?.display_name || typeId,
+                displayName: testInfo ? testInfo.display_name : typeId,
                 bestScore: isPending ? (testInfo?.default_score || 0) : scoresByType[typeId],
                 attempts: attemptsByType[typeId] || 0,
                 isPending,
