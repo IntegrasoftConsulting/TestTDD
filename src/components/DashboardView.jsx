@@ -215,61 +215,112 @@ const DashboardView = ({
                 </div>
             )}
 
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
-                    <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <BarChart3 className="text-indigo-600 dark:text-indigo-400" /> Historial de Resultados
-                    </h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="text-slate-400 dark:text-slate-500 text-xs uppercase font-black tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
-                                <th className="px-8 py-6">Ingeniero</th>
-                                <th className="px-8 py-6">Examen</th>
-                                <th className="px-8 py-6">Puntaje</th>
-                                <th className="px-8 py-6">Fecha</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {(filteredAnalyticsData || []).length === 0 ? (
-                                <tr>
-                                    <td colSpan="4" className="px-8 py-20 text-center">
-                                        <div className="flex flex-col items-center opacity-30">
-                                            <ClipboardCheck className="w-16 h-16 mb-4" />
-                                            <p className="text-lg font-bold uppercase tracking-tighter">No hay resultados para este filtro...</p>
-                                        </div>
-                                    </td>
+            {isAdmin ? (
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                        <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <BarChart3 className="text-indigo-600 dark:text-indigo-400" /> Historial de Resultados
+                        </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-slate-400 dark:text-slate-500 text-xs uppercase font-black tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
+                                    <th className="px-8 py-6">Ingeniero</th>
+                                    <th className="px-8 py-6">Examen</th>
+                                    <th className="px-8 py-6">Puntaje</th>
+                                    <th className="px-8 py-6">Fecha</th>
                                 </tr>
-                            ) : (
-                                filteredAnalyticsData?.map((res) => (
-                                    <tr key={res.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="px-8 py-6">
-                                            <div className="font-bold text-slate-800 dark:text-slate-200">{res.studentName}</div>
-                                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase">{res.id.substring(0, 8)}</div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border
-                                        ${res.testType === 'BDD' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50'}`}>
-                                                {res.testType || 'TDD'}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-end gap-1">
-                                                <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{Math.round(res.score)}%</span>
-                                                <span className="text-xs text-slate-400 dark:text-slate-500 mb-1 font-bold">({res.correctAnswers}/{res.totalQuestions})</span>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {(filteredAnalyticsData || []).length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4" className="px-8 py-20 text-center">
+                                            <div className="flex flex-col items-center opacity-30">
+                                                <ClipboardCheck className="w-16 h-16 mb-4" />
+                                                <p className="text-lg font-bold uppercase tracking-tighter">No hay resultados para este filtro...</p>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                            {res.timestamp ? new Date(res.timestamp).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '---'}
-                                        </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    filteredAnalyticsData?.map((res) => (
+                                        <tr key={res.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-8 py-6">
+                                                <div className="font-bold text-slate-800 dark:text-slate-200">{res.studentName}</div>
+                                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase">{res.id.substring(0, 8)}</div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border
+                                            ${res.testType === 'BDD' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50'}`}>
+                                                    {res.testType || 'TDD'}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-end gap-1">
+                                                    <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{Math.round(res.score)}%</span>
+                                                    <span className="text-xs text-slate-400 dark:text-slate-500 mb-1 font-bold">({res.correctAnswers}/{res.totalQuestions})</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                                {res.timestamp ? new Date(res.timestamp).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '---'}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                studentSummaryData && studentSummaryData.testDetails.filter(t => !t.isPending).length > 0 && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                            <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <ClipboardCheck className="text-indigo-600 dark:text-indigo-400" /> Resultados Generales
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-slate-400 dark:text-slate-500 text-xs uppercase font-black tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
+                                        <th className="px-8 py-6">Tipo de Evaluación</th>
+                                        <th className="px-8 py-6 text-center">Intentos</th>
+                                        <th className="px-8 py-6">Mejor Nota</th>
+                                        <th className="px-8 py-6">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {studentSummaryData.testDetails.filter(t => !t.isPending).map(test => {
+                                        const isApproved = test.bestScore >= 70;
+                                        return (
+                                            <tr key={test.testId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="px-8 py-6">
+                                                    <div className="font-bold text-slate-800 dark:text-slate-200">{test.displayName}</div>
+                                                </td>
+                                                <td className="px-8 py-6 text-center font-bold text-slate-600 dark:text-slate-400">
+                                                    {test.attempts}
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{Math.round(test.bestScore)}%</span>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
+                                                        isApproved
+                                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                                    }`}>
+                                                        {isApproved ? 'Aprobado' : 'En revisión'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )
+            )}
         </div>
     );
 };
