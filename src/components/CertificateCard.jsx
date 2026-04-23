@@ -114,8 +114,24 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
                     en el programa <strong style={{ color: '#1e293b' }}>Modern Software Craftsmanship</strong>.
                 </p>
 
-                {/* Spacer to replace the grid */}
-                <div style={{ height: '40px' }} />
+                {/* Signature Block */}
+                <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', color: '#1e293b', fontStyle: 'italic', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                        Iván Darío Sánchez Fonseca
+                    </div>
+                    <div style={{ width: '160px', height: '1px', backgroundColor: '#6366f1', opacity: 0.4, marginBottom: '6px' }} />
+                    <p style={{ margin: 0, fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                        Software Craftsman Coach
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="#64748b">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                        <p style={{ margin: 0, fontSize: '9px', color: '#64748b', fontFamily: 'monospace', letterSpacing: '0.5px' }}>
+                            /in/idsanchezf
+                        </p>
+                    </div>
+                </div>
 
                 {/* Footer */}
                 <div style={{ marginTop: 'auto', paddingTop: '16px', width: '100%', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
