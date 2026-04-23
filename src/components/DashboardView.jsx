@@ -272,25 +272,34 @@ const DashboardView = ({
                     </div>
                 </div>
             ) : (
-                studentSummaryData && studentSummaryData.testDetails.filter(t => !t.isPending).length > 0 && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
-                            <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                <ClipboardCheck className="text-indigo-600 dark:text-indigo-400" /> Resultados Generales
-                            </h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-slate-400 dark:text-slate-500 text-xs uppercase font-black tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
-                                        <th className="px-8 py-6">Tipo de Evaluación</th>
-                                        <th className="px-8 py-6 text-center">Intentos</th>
-                                        <th className="px-8 py-6">Mejor Nota</th>
-                                        <th className="px-8 py-6">Estado</th>
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                        <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <ClipboardCheck className="text-indigo-600 dark:text-indigo-400" /> Resultados Generales
+                        </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-slate-400 dark:text-slate-500 text-xs uppercase font-black tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
+                                    <th className="px-8 py-6">Tipo de Evaluación</th>
+                                    <th className="px-8 py-6 text-center">Intentos</th>
+                                    <th className="px-8 py-6">Mejor Nota</th>
+                                    <th className="px-8 py-6">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {(!studentSummaryData || studentSummaryData.testDetails.filter(t => !t.isPending).length === 0) ? (
+                                    <tr>
+                                        <td colSpan="4" className="px-8 py-20 text-center">
+                                            <div className="flex flex-col items-center opacity-30">
+                                                <ClipboardCheck className="w-16 h-16 mb-4" />
+                                                <p className="text-lg font-bold uppercase tracking-tighter">Aún no hay evaluaciones completadas...</p>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                    {studentSummaryData.testDetails.filter(t => !t.isPending).map(test => {
+                                ) : (
+                                    studentSummaryData.testDetails.filter(t => !t.isPending).map(test => {
                                         const isApproved = test.bestScore >= 70;
                                         return (
                                             <tr key={test.testId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -314,12 +323,12 @@ const DashboardView = ({
                                                 </td>
                                             </tr>
                                         );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                    })
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )
+                </div>
             )}
         </div>
     );
