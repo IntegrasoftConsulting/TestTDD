@@ -54,7 +54,7 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
             }}
         >
             {/* Top accent bar */}
-            <div style={{ height: '8px', background: 'linear-gradient(90deg, #0f172a 0%, #6366f1 50%, #0f172a 100%)' }} />
+            <div style={{ height: '8px', backgroundColor: '#6366f1' }} />
 
             {/* Border frame */}
             <div style={{
@@ -95,7 +95,7 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
                     </div>
                 </div>
 
-                <div style={{ width: '120px', height: '1px', background: 'linear-gradient(90deg, rgba(99,102,241,0) 0%, #6366f1 50%, rgba(99,102,241,0) 100%)', margin: '16px auto' }} />
+                <div style={{ width: '120px', height: '1px', backgroundColor: '#6366f1', opacity: 0.5, margin: '16px auto' }} />
 
                 <p style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: '#64748b', margin: '0 0 24px', fontFamily: 'monospace' }}>
                     Certificado de Aprobación
@@ -158,7 +158,7 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
             </div>
 
             {/* Bottom accent bar */}
-            <div style={{ height: '4px', background: 'linear-gradient(90deg, #0f172a 0%, #6366f1 50%, #0f172a 100%)' }} />
+            <div style={{ height: '4px', backgroundColor: '#6366f1' }} />
         </div>
     );
 });
