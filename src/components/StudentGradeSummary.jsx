@@ -276,7 +276,6 @@ const StudentGradeSummary = ({
                     />
                 )}
             </div>
-        </div>
     );
 };
 
