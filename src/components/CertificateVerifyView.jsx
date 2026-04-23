@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../data/supabaseClient';
+import { supabase } from '../supabaseClient';
 import { Award, CheckCircle, XCircle, Calendar, ShieldCheck, Home } from 'lucide-react';
 
 // Reusing same logo SVG component
