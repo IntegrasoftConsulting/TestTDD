@@ -815,13 +815,14 @@ export const useAppLogic = () => {
                 }
             });
 
-            const pendingTypes = activeTestIds.filter(id => !scoresByType[id]);
+            const pendingTypes = activeTestIds.filter(id => scoresByType[id] === undefined);
             const totalActive = activeTestIds.length;
             
             const presentedTypes = Object.keys(scoresByType);
+            const activePresentedTypes = presentedTypes.filter(t => activeTestIds.includes(t));
 
             // HU-27: Sumar mejores puntajes + (puntajes por defecto para pendientes)
-            let sumTotalWithDefaults = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+            let sumTotalWithDefaults = activePresentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
             pendingTypes.forEach(pId => {
                 const testRef = (testTypes || []).find(t => t.test_id === pId);
                 sumTotalWithDefaults += (testRef?.default_score || 0);
@@ -840,7 +841,7 @@ export const useAppLogic = () => {
                 name: student.name,
                 email: student.email,
                 scoresByType: scoresWithDefaults, // Ahora contiene objetos para pendientes
-                presentedTypes,
+                presentedTypes: activePresentedTypes,
                 pendingTypes,
                 generalPct: Math.round(generalPct * 10) / 10,
                 totalAttempts: student.results.length,
@@ -916,10 +917,11 @@ export const useAppLogic = () => {
         });
 
         const presentedTypes = Object.keys(scoresByType);
-        const pendingTypes = activeTestIds.filter(id => !scoresByType[id]);
+        const activePresentedTypes = presentedTypes.filter(t => activeTestIds.includes(t));
+        const pendingTypes = activeTestIds.filter(id => scoresByType[id] === undefined);
         
         // HU-27: Cálculo ponderado incluyendo pendientes con valor por defecto
-        let sumTotalWithDefaults = presentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+        let sumTotalWithDefaults = activePresentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
         pendingTypes.forEach(pId => {
             const testRef = (testTypes || []).find(t => t.test_id === pId);
             sumTotalWithDefaults += (testRef?.default_score || 0);
@@ -931,7 +933,7 @@ export const useAppLogic = () => {
         // Detalle por tipo
         const testDetails = activeTestIds.map(typeId => {
             const testInfo = (testTypes || []).find(t => t.test_id === typeId);
-            const isPending = !scoresByType[typeId] && scoresByType[typeId] !== 0;
+            const isPending = scoresByType[typeId] === undefined;
             return {
                 testId: typeId,
                 displayName: testInfo?.display_name || typeId,
@@ -946,7 +948,7 @@ export const useAppLogic = () => {
             generalPct,
             status: generalPct >= 70 ? 'approved' : 'review',
             totalAttempts: myResults.length,
-            completedTypes: presentedTypes.length,
+            completedTypes: activePresentedTypes.length,
             totalTypes: activeTestIds.length,
             pendingTypes,
             testDetails
