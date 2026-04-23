@@ -982,7 +982,37 @@ CREATE TABLE public.certificates (
 - **Cuando** el usuario lee las columnas
 - **Entonces** la tabla debe indicar el **Tipo de Evaluación**, la **Mejor Nota Obtenida**, los **Intentos** realizados para esa evaluación y el **Estado** (Aprobado / En revisión) resaltado con el color correspondiente.
 
-**Criterios de Aceptación 4: Consistencia de datos con el Resumen**
+**Criterio de Aceptación 4: Consistencia de datos con el Resumen**
 - **Dado** que el estudiante visualiza su tabla de resultados
 - **Cuando** compara los valores con los widgets superiores ("Mi Resumen de Notas")
 - **Entonces** la información de mejor nota e intentos debe coincidir perfectamente con la lógica de agrupación expuesta en el Gauge general y el desglose de progreso.
+
+---
+
+### HU-34: Inclusión de Tests Pendientes en Desglose y Tabla de Resultados Generales
+
+**Como** estudiante de la plataforma
+**Quiero** ver gráficamente los tests que aún no he presentado (marcados como pendientes o no evaluados) dentro de mi desglose y tabla de resultados generales.
+**Para** tener plena conciencia de las evaluaciones obligatorias que me faltan por completar y entender por qué mi nota promedio ponderada puede estar viéndose afectada.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Eliminación de filtrado de pendientes en la vista**
+- **Dado** que el estudiante no ha presentado uno o más tests configurados como activos
+- **Cuando** revisa el componente "Mi Resumen de Notas" y la tabla "Resultados Generales"
+- **Entonces** estos tests no presentados deben renderizarse explícitamente en la lista y la tabla, y no ser ocultados.
+
+**Criterios de Aceptación 2: Indicador visual de estado Pendiente en el desglose**
+- **Dado** que un test está siendo mostrado pero no tiene intentos en el Desglose por Evaluación
+- **Cuando** el estudiante visualiza su tarjeta
+- **Entonces** el test debe lucir visualmente diferenciado (ej. borde punteado, opacidad reducida o un ícono de reloj), con el texto "No presentado aún".
+
+**Criterios de Aceptación 3: Datos de tests pendientes en Resultados Generales**
+- **Dado** que un test no presentado aparece en la tabla de Resultados Generales
+- **Cuando** se visualizan sus columnas
+- **Entonces** debe indicar 0 intentos, un valor de nota igual a 0% (o la nota por defecto), y el estado explícito "Pendiente".
+
+**Criterios de Aceptación 4: Interfaz consistente desde el estado vacío**
+- **Dado** que un estudiante que nunca ha hecho un test inicia sesión
+- **Cuando** visualiza el dashboard
+- **Entonces** la tabla de resultados ya no debe ocultarse detrás de un gran mensaje vacío si existen evaluaciones configuradas, sino mostrar la tabla con todos los tests listados en estado pendiente indicando 0% de avance.

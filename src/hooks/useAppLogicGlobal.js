@@ -901,12 +901,12 @@ export const useAppLogic = () => {
 
         // Filtrar solo resultados del estudiante actual (case insensitive)
         const myResults = isAdmin 
-            ? allResults.filter(r => r.email?.toLowerCase().trim() === email?.toLowerCase().trim())
-            : allResults;
-
-        if (myResults.length === 0) return null;
+            ? (allResults || []).filter(r => r.email?.toLowerCase().trim() === email?.toLowerCase().trim())
+            : (allResults || []);
 
         const activeTestIds = (testTypes || []).filter(t => t.is_active).map(t => t.test_id);
+
+        if (myResults.length === 0 && activeTestIds.length === 0) return null;
 
         // Mejor puntaje por tipo de test (Case Insensitive mapping)
         const scoresByType = {};

@@ -289,36 +289,37 @@ const DashboardView = ({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {(!studentSummaryData || studentSummaryData.testDetails.filter(t => !t.isPending).length === 0) ? (
+                                {(!studentSummaryData || studentSummaryData.testDetails.length === 0) ? (
                                     <tr>
-                                        <td colSpan="4" className="px-8 py-20 text-center">
-                                            <div className="flex flex-col items-center opacity-30">
-                                                <ClipboardCheck className="w-16 h-16 mb-4" />
-                                                <p className="text-lg font-bold uppercase tracking-tighter">Aún no hay evaluaciones completadas...</p>
+                                        <td colSpan="4" className="px-8 py-12 text-center">
+                                            <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                                                <ClipboardCheck className="w-12 h-12 mb-4 opacity-50" />
+                                                <p className="text-lg font-bold uppercase tracking-tighter">Aún no hay evaluaciones configuradas en la plataforma...</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    studentSummaryData.testDetails.filter(t => !t.isPending).map(test => {
+                                    studentSummaryData.testDetails.map(test => {
                                         const isApproved = test.bestScore >= 70;
                                         return (
-                                            <tr key={test.testId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                            <tr key={test.testId} className={`group hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors ${test.isPending ? 'opacity-70' : ''}`}>
                                                 <td className="px-8 py-6">
-                                                    <div className="font-bold text-slate-800 dark:text-slate-200">{test.displayName}</div>
+                                                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                                        {test.displayName}
+                                                    </div>
                                                 </td>
                                                 <td className="px-8 py-6 text-center font-bold text-slate-600 dark:text-slate-400">
                                                     {test.attempts}
                                                 </td>
                                                 <td className="px-8 py-6">
-                                                    <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{Math.round(test.bestScore)}%</span>
+                                                    <span className={`text-2xl font-black ${test.isPending ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                                                        {Math.round(test.bestScore)}%
+                                                    </span>
                                                 </td>
                                                 <td className="px-8 py-6">
-                                                    <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
-                                                        isApproved
-                                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                                    }`}>
-                                                        {isApproved ? 'Aprobado' : 'En revisión'}
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold leading-none
+                                                        ${test.isPending ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' : isApproved ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                                                        {test.isPending ? 'Pendiente' : (isApproved ? 'Aprobado' : 'En revisión')}
                                                     </span>
                                                 </td>
                                             </tr>
