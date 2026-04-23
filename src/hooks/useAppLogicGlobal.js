@@ -899,8 +899,11 @@ export const useAppLogic = () => {
     const studentSummaryData = useMemo(() => {
         if (isAdmin || !isLoggedIn || !allResults || allResults.length === 0) return null;
 
-        // Filtrar solo resultados del estudiante actual
-        const myResults = allResults.filter(r => r.email === email);
+        // Filtrar solo resultados del estudiante actual (case insensitive)
+        const myResults = isAdmin 
+            ? allResults.filter(r => r.email?.toLowerCase().trim() === email?.toLowerCase().trim())
+            : allResults;
+
         if (myResults.length === 0) return null;
 
         const activeTestIds = (testTypes || []).filter(t => t.is_active).map(t => t.test_id);
@@ -909,7 +912,7 @@ export const useAppLogic = () => {
         const scoresByType = {};
         const attemptsByType = {};
         myResults.forEach(r => {
-            const type = r.testType || 'TDD';
+            const type = r.testType?.trim() || 'TDD';
             if (!scoresByType[type] || r.score > scoresByType[type]) {
                 scoresByType[type] = r.score;
             }
