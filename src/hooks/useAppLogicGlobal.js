@@ -948,7 +948,8 @@ export const useAppLogic = () => {
                 bestScore: isPending ? (testInfo?.default_score || 0) : scoresByType[typeId],
                 attempts: attemptsByType[typeId] || 0,
                 isPending,
-                isDefault: isPending
+                isDefault: isPending,
+                isActive: testInfo ? testInfo.is_active : false
             };
         });
 

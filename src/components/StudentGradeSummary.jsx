@@ -233,12 +233,18 @@ const StudentGradeSummary = ({
                                         <span className={`text-2xl font-black ${getScoreColor(test.bestScore)} opacity-40`}>
                                             {Math.round(test.bestScore)}%
                                         </span>
-                                        <button
-                                            onClick={() => handleStartTest(test.testId)}
-                                            className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all flex items-center gap-1"
-                                        >
-                                            Nota Base <ArrowRight className="w-3 h-3" />
-                                        </button>
+                                        {test.isActive ? (
+                                            <button
+                                                onClick={() => handleStartTest(test.testId)}
+                                                className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all flex items-center gap-1"
+                                            >
+                                                Nota Base <ArrowRight className="w-3 h-3" />
+                                            </button>
+                                        ) : (
+                                            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/30 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+                                                Cerrado
+                                            </span>
+                                        )}
                                     </div>
                                 ) : (
                                     <span className={`text-2xl font-black ${getScoreColor(test.bestScore)}`}>
