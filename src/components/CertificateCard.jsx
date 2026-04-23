@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Award, CheckCircle, Clock, XCircle, Download, Loader2, Shield, ExternalLink } from 'lucide-react';
+import { Award, CheckCircle, Clock, XCircle, Download, Loader2, Shield, ExternalLink, Linkedin } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -279,14 +279,25 @@ const CertificateCard = ({
                                             }
                                         </button>
                                         {certificate && (
-                                            <a
-                                                href={`?cert=${certificate.certificate_id}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 px-4 py-2.5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5" /> Verificar
-                                            </a>
+                                            <>
+                                                <a
+                                                    href={`?cert=${certificate.certificate_id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 px-4 py-2.5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all"
+                                                >
+                                                    <ExternalLink className="w-3.5 h-3.5" /> Verificar
+                                                </a>
+                                                
+                                                <a
+                                                    href={`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=Modern%20Software%20Craftsmanship&organizationName=Integrasoft%20Consulting&issueYear=${new Date(certificate.issued_at).getFullYear()}&issueMonth=${new Date(certificate.issued_at).getMonth() + 1}&certUrl=${encodeURIComponent(window.location.origin + window.location.pathname + '?cert=' + certificate.certificate_id)}&certId=${certificate.certificate_id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0077b5] dark:text-[#0077b5] bg-[#0077b5]/10 dark:bg-[#0077b5]/20 border border-[#0077b5]/20 dark:border-[#0077b5]/30 px-4 py-2.5 rounded-xl hover:bg-[#0077b5]/20 transition-all ml-auto sm:ml-0"
+                                                >
+                                                    <Linkedin className="w-3.5 h-3.5" fill="currentColor" /> Añadir al perfil
+                                                </a>
+                                            </>
                                         )}
                                     </div>
                                 </>
