@@ -957,3 +957,32 @@ CREATE TABLE public.certificates (
 );
 ```
 
+---
+
+### HU-33: Tabla de Resultados Generales en Vista de Alumno
+
+**Como** estudiante de la plataforma
+**Quiero** visualizar una tabla con mis resultados generales consolidados en lugar del historial de intentos actual
+**Para** tener un resumen claro y directo de mi mejor desempeño por cada tipo de evaluación, sin el ruido visual de todos mis intentos previos.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Eliminación del historial actual**
+- **Dado** que el estudiante se encuentra en su Dashboard
+- **Cuando** navega hacia la parte inferior de la vista
+- **Entonces** la tabla anterior titulada "Historial de Intentos" ya no debe estar renderizada en la interfaz.
+
+**Criterios de Aceptación 2: Nueva Tabla de Resultados Generales**
+- **Dado** que el estudiante está en su Dashboard
+- **Cuando** visualiza la sección de progreso y resultados
+- **Entonces** debe ver una nueva tabla que muestre exclusivamente su mejor resultado por cada tipo de test (solo una fila por tipo).
+
+**Criterios de Aceptación 3: Datos de la Tabla Consolidada**
+- **Dado** que se renderiza la tabla de Resultados Generales
+- **Cuando** el usuario lee las columnas
+- **Entonces** la tabla debe indicar el **Tipo de Evaluación**, la **Mejor Nota Obtenida**, los **Intentos** realizados para esa evaluación y el **Estado** (Aprobado / En revisión) resaltado con el color correspondiente.
+
+**Criterios de Aceptación 4: Consistencia de datos con el Resumen**
+- **Dado** que el estudiante visualiza su tabla de resultados
+- **Cuando** compara los valores con los widgets superiores ("Mi Resumen de Notas")
+- **Entonces** la información de mejor nota e intentos debe coincidir perfectamente con la lógica de agrupación expuesta en el Gauge general y el desglose de progreso.
