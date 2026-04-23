@@ -1022,3 +1022,27 @@ CREATE TABLE public.certificates (
 - **Cuando** el estudiante visualiza sus evaluaciones pendientes
 - **Entonces** el sistema no debe permitirle empezar o presentar dicho test, asignándole la opción de nota base por defecto en su promedio general.
 
+---
+
+### HU-35: Publicar Certificado de Aprobación en LinkedIn
+
+**Como** estudiante que ha superado satisfactoriamente el programa de evaluación
+**Quiero** disponer de un botón directo para compartir o añadir mi certificado a mi perfil de LinkedIn
+**Para** exhibir públicamente el logro académico obtenido y enriquecer mis credenciales en mi red profesional.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Visibilidad del botón "Añadir a LinkedIn"**
+- **Dado** que el estudiante ha obtenido su certificación (estado "Aprobado" global)
+- **Cuando** visualiza el panel de felicitaciones en su dashboard, donde se encuentra el botón de "Descargar PDF"
+- **Entonces** debe visualizar un botón secundario distintivo (preferiblemente que acentúe la marca de LinkedIn) con el texto "Añadir al perfil" o "Compartir".
+
+**Criterios de Aceptación 2: Integración con URL Add-to-Profile de LinkedIn**
+- **Dado** que el estudiante presiona el botón de LinkedIn
+- **Cuando** el front-end procesa dicho evento
+- **Entonces** debe abrirse de inmediato una nueva pestaña redirigiendo a la URL de autocompletado de certificaciones de LinkedIn (`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME`), inyectando como parámetros: el nombre ("Modern Software Craftsmanship"), la organización ("Integrasoft Consulting"), la fecha de expedición, el ID único y la URL pública de validación (`/verify/{id}`).
+
+**Criterios de Aceptación 3: Restricción del componente**
+- **Dado** que el estudiante todavía se encuentre en estado "Pendiente" o "En revisión" (nota insuficiente)
+- **Cuando** explore el dashboard y el resumen de notas
+- **Entonces** el botón de publicación de LinkedIn no debe existir ni ser accesible de ninguna forma en la interfaz para prevenir divulgaciones tempranas.
