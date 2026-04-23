@@ -904,9 +904,9 @@ export const useAppLogic = () => {
             ? (allResults || []).filter(r => r.email?.toLowerCase().trim() === email?.toLowerCase().trim())
             : (allResults || []);
 
-        const activeTestIds = (testTypes || []).filter(t => t.is_active).map(t => t.test_id);
+        const configuredTestIds = (testTypes || []).map(t => t.test_id);
 
-        if (myResults.length === 0 && activeTestIds.length === 0) return null;
+        if (myResults.length === 0 && configuredTestIds.length === 0) return null;
 
         // Mejor puntaje por tipo de test (Case Insensitive mapping)
         const scoresByType = {};
@@ -923,21 +923,21 @@ export const useAppLogic = () => {
         });
 
         const presentedTypes = Object.keys(scoresByType);
-        const activePresentedTypes = presentedTypes.filter(t => activeTestIds.includes(t));
-        const pendingTypes = activeTestIds.filter(id => scoresByType[id] === undefined);
+        const configuredPresentedTypes = presentedTypes.filter(t => configuredTestIds.includes(t));
+        const pendingTypes = configuredTestIds.filter(id => scoresByType[id] === undefined);
         
         // HU-27: Cálculo ponderado incluyendo pendientes con valor por defecto
-        let sumTotalWithDefaults = activePresentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
+        let sumTotalWithDefaults = configuredPresentedTypes.reduce((acc, t) => acc + scoresByType[t], 0);
         pendingTypes.forEach(pId => {
             const testRef = (testTypes || []).find(t => t.test_id === pId);
             sumTotalWithDefaults += (testRef?.default_score || 0);
         });
 
-        const totalActive = activeTestIds.length;
-        const generalPct = totalActive > 0 ? Math.round((sumTotalWithDefaults / totalActive) * 10) / 10 : 0;
+        const totalConfigured = configuredTestIds.length;
+        const generalPct = totalConfigured > 0 ? Math.round((sumTotalWithDefaults / totalConfigured) * 10) / 10 : 0;
 
-        // Detalle por tipo (incluir tests inactivos que ya fueron presentados)
-        const allRelevantTypes = Array.from(new Set([...activeTestIds, ...presentedTypes]));
+        // Detalle por tipo (incluir tests no configurados que ya fueron presentados)
+        const allRelevantTypes = Array.from(new Set([...configuredTestIds, ...presentedTypes]));
 
         const testDetails = allRelevantTypes.map(typeId => {
             const testInfo = (testTypes || []).find(t => t.test_id === typeId);
@@ -956,8 +956,8 @@ export const useAppLogic = () => {
             generalPct,
             status: generalPct >= 70 ? 'approved' : 'review',
             totalAttempts: myResults.length,
-            completedTypes: activePresentedTypes.length,
-            totalTypes: activeTestIds.length,
+            completedTypes: configuredPresentedTypes.length,
+            totalTypes: configuredTestIds.length,
             pendingTypes,
             testDetails
         };
