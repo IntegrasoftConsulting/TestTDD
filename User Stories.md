@@ -1016,3 +1016,9 @@ CREATE TABLE public.certificates (
 - **Dado** que un estudiante que nunca ha hecho un test inicia sesión
 - **Cuando** visualiza el dashboard
 - **Entonces** la tabla de resultados ya no debe ocultarse detrás de un gran mensaje vacío si existen evaluaciones configuradas, sino mostrar la tabla con todos los tests listados en estado pendiente indicando 0% de avance.
+
+**Criterios de Aceptación 5: Bloqueo de presentación para tests inactivos**
+- **Dado** que uno de los tests se encuentra inactivo o cerrado
+- **Cuando** el estudiante visualiza sus evaluaciones pendientes
+- **Entonces** el sistema no debe permitirle empezar o presentar dicho test, asignándole la opción de nota base por defecto en su promedio general.
+
