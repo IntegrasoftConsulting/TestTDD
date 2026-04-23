@@ -42,7 +42,7 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
             ref={ref}
             style={{
                 width: '794px',
-                minHeight: '560px',
+                height: '560px',
                 background: '#fafafa',
                 fontFamily: "'Georgia', 'Times New Roman', serif",
                 display: 'flex',
@@ -203,9 +203,9 @@ const CertificateCard = ({
             el.style.left = '';
             el.style.top = '';
 
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [794, 560] });
-            pdf.addImage(imgData, 'PNG', 0, 0, 794, 560);
+            pdf.addImage(imgData, 'JPEG', 0, 0, 794, 560);
 
             const safeName = (studentName || 'student').replace(/\s+/g, '_').toLowerCase();
             pdf.save(`certificado_msc_${safeName}.pdf`);
