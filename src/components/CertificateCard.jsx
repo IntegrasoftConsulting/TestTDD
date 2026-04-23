@@ -45,7 +45,7 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
                 height: '560px',
                 background: '#fafafa',
                 fontFamily: "'Georgia', 'Times New Roman', serif",
-                display: 'flex',
+                display: 'none',
                 flexDirection: 'column',
                 padding: '0',
                 position: 'relative',
@@ -187,7 +187,7 @@ const CertificateCard = ({
             el.style.position = 'fixed';
             el.style.left = '-9999px';
             el.style.top = '0';
-            el.style.display = 'block';
+            el.style.display = 'flex';
 
             await new Promise(r => setTimeout(r, 200));
 
@@ -240,14 +240,12 @@ const CertificateCard = ({
     return (
         <>
             {/* Hidden render target */}
-            <div style={{ display: 'none' }}>
-                <CertificateDOM
-                    ref={certRef}
-                    cert={certForRender}
-                    testDetails={testDetails}
-                    studentName={studentName}
-                />
-            </div>
+            <CertificateDOM
+                ref={certRef}
+                cert={certForRender}
+                testDetails={testDetails}
+                studentName={studentName}
+            />
 
             <div className={`mt-6 rounded-2xl border overflow-hidden transition-all duration-300 ${
                 eligible
