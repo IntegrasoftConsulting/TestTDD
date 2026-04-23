@@ -897,7 +897,7 @@ export const useAppLogic = () => {
 
     // HU-26: Resumen de Notas Consolidado para el Estudiante
     const studentSummaryData = useMemo(() => {
-        if (isAdmin || !isLoggedIn || !allResults || allResults.length === 0) return null;
+        if (isAdmin || !isLoggedIn || !allResults) return null;
 
         // Filtrar solo resultados del estudiante actual (case insensitive)
         const myResults = isAdmin 
