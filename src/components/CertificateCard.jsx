@@ -6,15 +6,15 @@ import jsPDF from 'jspdf';
 // ─── SVG Logo inline "TMP" ────────────────────────────────────────────────────
 const TmpLogo = ({ size = 56 }) => (
     <svg width={size} height={size} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="56" height="56" rx="10" fill="#0f172a"/>
+        <rect width="56" height="56" rx="10" fill="#0f172a" />
         {/* Hexagon outline */}
         <polygon points="28,6 48,17 48,39 28,50 8,39 8,17"
             fill="none" stroke="#6366f1" strokeWidth="1.5" />
         {/* Inner diamond */}
         <polygon points="28,14 38,28 28,42 18,28"
-            fill="none" stroke="#818cf8" strokeWidth="1"/>
+            fill="none" stroke="#818cf8" strokeWidth="1" />
         {/* Center dot */}
-        <circle cx="28" cy="28" r="3" fill="#6366f1"/>
+        <circle cx="28" cy="28" r="3" fill="#6366f1" />
         {/* TMP text */}
         <text x="28" y="58" textAnchor="middle" fontSize="8"
             fontFamily="monospace" fill="#94a3b8" fontWeight="bold"
@@ -81,8 +81,8 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
                             <polygon points="28,6 48,17 48,39 28,50 8,39 8,17"
                                 fill="none" stroke="#6366f1" strokeWidth="1.5" />
                             <polygon points="28,14 38,28 28,42 18,28"
-                                fill="none" stroke="#818cf8" strokeWidth="1"/>
-                            <circle cx="28" cy="28" r="3" fill="#6366f1"/>
+                                fill="none" stroke="#818cf8" strokeWidth="1" />
+                            <circle cx="28" cy="28" r="3" fill="#6366f1" />
                         </svg>
                     </div>
                     <div>
@@ -220,11 +220,10 @@ const CertificateCard = ({
                 studentName={studentName}
             />
 
-            <div className={`mt-6 rounded-2xl border overflow-hidden transition-all duration-300 ${
-                eligible
+            <div className={`mt-6 rounded-2xl border overflow-hidden transition-all duration-300 ${eligible
                     ? 'bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950/30 dark:via-slate-900 dark:to-purple-950/30 border-indigo-200 dark:border-indigo-800/50 shadow-lg shadow-indigo-100/50 dark:shadow-none'
                     : 'bg-slate-50/50 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700'
-            }`}>
+                }`}>
                 {/* Header stripe */}
                 {eligible && (
                     <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500" />
@@ -233,11 +232,10 @@ const CertificateCard = ({
                 <div className="p-6">
                     <div className="flex items-start gap-4">
                         {/* Icon / Badge */}
-                        <div className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
-                            eligible
+                        <div className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${eligible
                                 ? 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200/50 dark:shadow-none'
                                 : 'bg-slate-100 dark:bg-slate-800'
-                        }`}>
+                            }`}>
                             {eligible
                                 ? <Award className="w-6 h-6 text-white" />
                                 : allCompleted
@@ -288,9 +286,9 @@ const CertificateCard = ({
                                                 >
                                                     <ExternalLink className="w-3.5 h-3.5" /> Verificar
                                                 </a>
-                                                
+
                                                 <a
-                                                    href={`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=Modern%20Software%20Craftsmanship&organizationName=Integrasoft%20Consulting&issueYear=${new Date(certificate.issued_at).getFullYear()}&issueMonth=${new Date(certificate.issued_at).getMonth() + 1}&certUrl=${encodeURIComponent(window.location.origin + window.location.pathname + '?cert=' + certificate.certificate_id)}&certId=${certificate.certificate_id}`}
+                                                    href={`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=Modern%20Software%20Craftsmanship&organizationName=Mastery%20Platform&issueYear=${new Date(certificate.issued_at).getFullYear()}&issueMonth=${new Date(certificate.issued_at).getMonth() + 1}&certUrl=${encodeURIComponent(window.location.origin + window.location.pathname + '?cert=' + certificate.certificate_id)}&certId=${certificate.certificate_id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0077b5] dark:text-[#0077b5] bg-[#0077b5]/10 dark:bg-[#0077b5]/20 border border-[#0077b5]/20 dark:border-[#0077b5]/30 px-4 py-2.5 rounded-xl hover:bg-[#0077b5]/20 transition-all ml-auto sm:ml-0"
@@ -347,11 +345,10 @@ const CertificateCard = ({
 
                         {/* Score badge */}
                         <div className={`shrink-0 flex flex-col items-center ${eligible ? '' : 'opacity-40'}`}>
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg border-2 ${
-                                eligible
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg border-2 ${eligible
                                     ? 'bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400'
                                     : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
-                            }`}>
+                                }`}>
                                 {score}%
                             </div>
                             {eligible && (
