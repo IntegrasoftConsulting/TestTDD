@@ -985,20 +985,21 @@ export const useAppLogic = () => {
     // Elegibilidad: ≥70% ponderado y TODOS los tests completados
     const certEligibility = useMemo(() => {
         if (!studentSummaryData || isAdmin) return null;
-        const { generalPct, pendingTypes, completedTypes, totalTypes, testDetails } = studentSummaryData;
-        const allCompleted = completedTypes === totalTypes;
+        const { generalPct, testDetails } = studentSummaryData;
+        
+        // Un estudiante completa el curso si no le faltan tests ACTIVOS por tomar
+        const pendingActiveTypes = testDetails.filter(t => t.isPending && t.isActive);
+        const allCompleted = pendingActiveTypes.length === 0;
         const passes = generalPct >= 70;
+        
         return {
             eligible: allCompleted && passes,
             score: generalPct,
             allCompleted,
             passes,
-            missingTests: (pendingTypes || []).map(id => {
-                const t = (testTypes || []).find(tt => tt.test_id === id);
-                return t?.display_name || id;
-            })
+            missingTests: pendingActiveTypes.map(t => t.displayName)
         };
-    }, [studentSummaryData, isAdmin, testTypes]);
+    }, [studentSummaryData, isAdmin]);
 
     // Fetch certificate when student logs in
     useEffect(() => {
