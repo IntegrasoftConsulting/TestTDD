@@ -1006,6 +1006,40 @@ export const useAppLogic = () => {
         if (isLoggedIn && !isAdmin && view === 'dashboard') fetchCertificate();
     }, [isLoggedIn, isAdmin, view, fetchCertificate]);
 
+    // Auto-sincronizar el certificado si la nota mejora o cambia por revisión de reglas
+    useEffect(() => {
+        if (certificate && certEligibility && certEligibility.eligible && studentSummaryData) {
+            // Reconstruir el score detail actual para comparar o forzar
+            const scoreDetail = {};
+            (studentSummaryData.testDetails || []).forEach(t => {
+                scoreDetail[t.testId] = t.isPending ? null : Math.round(t.bestScore);
+            });
+
+            // Si la nota ponderada local discrepa con la DB, forzar el parche a Supabase
+            if (certificate.weighted_score !== studentSummaryData.generalPct) {
+                supabase.from('certificates')
+                    .update({ 
+                        weighted_score: studentSummaryData.generalPct,
+                        score_detail: scoreDetail,
+                        student_name: studentName
+                    })
+                    .eq('certificate_id', certificate.certificate_id)
+                    .then(({ error }) => {
+                        if (!error) {
+                            setCertificate(prev => ({ 
+                                ...prev, 
+                                weighted_score: studentSummaryData.generalPct,
+                                score_detail: scoreDetail,
+                                student_name: studentName
+                            }));
+                        } else {
+                            console.warn('[Auto-Sync] Falla al actualizar certificado DB', error);
+                        }
+                    });
+            }
+        }
+    }, [certificate, certEligibility, studentSummaryData, studentName]);
+
     const handleGenerateCertificate = useCallback(async () => {
         if (!certEligibility?.eligible || !studentSummaryData) return null;
         setCertLoading(true);
@@ -1031,8 +1065,18 @@ export const useAppLogic = () => {
                 .maybeSingle();
 
             if (existing) {
-                setCertificate({ ...existing, ...payload, student_name: studentName });
-                return { ...existing, ...payload };
+                // Sincronizar explícitamente en el botón de regeneración
+                await supabase.from('certificates')
+                    .update({ 
+                        weighted_score: studentSummaryData.generalPct,
+                        score_detail: scoreDetail,
+                        student_name: studentName
+                    })
+                    .eq('certificate_id', existing.certificate_id);
+
+                const finalCert = { ...existing, ...payload, student_name: studentName };
+                setCertificate(finalCert);
+                return finalCert;
             }
 
             const { data, error: certErr } = await supabase
