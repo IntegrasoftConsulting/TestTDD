@@ -114,35 +114,8 @@ const CertificateDOM = React.forwardRef(({ cert, testDetails, studentName }, ref
                     en el programa <strong style={{ color: '#1e293b' }}>Modern Software Craftsmanship</strong>.
                 </p>
 
-                {/* Score Grid */}
-                <div style={{
-                    display: 'flex', gap: '8px', marginTop: '24px', marginBottom: '20px', flexWrap: 'wrap', justifyContent: 'center'
-                }}>
-                    {scoreRows.map(s => (
-                        <div key={s.name} style={{
-                            padding: '8px 16px', background: '#f1f5f9', borderRadius: '6px',
-                            border: '1px solid #e2e8f0', textAlign: 'center', minWidth: '80px'
-                        }}>
-                            <p style={{ margin: 0, fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#64748b', fontFamily: 'monospace' }}>
-                                {s.name.replace('Test ', '')}
-                            </p>
-                            <p style={{ margin: '2px 0 0', fontSize: '18px', fontWeight: 'bold', color: s.score >= 70 ? '#16a34a' : '#dc2626', fontFamily: 'Georgia, serif' }}>
-                                {s.score}%
-                            </p>
-                        </div>
-                    ))}
-                    {/* General */}
-                    <div style={{
-                        padding: '8px 20px', background: '#0f172a', borderRadius: '6px', textAlign: 'center', minWidth: '90px'
-                    }}>
-                        <p style={{ margin: 0, fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#94a3b8', fontFamily: 'monospace' }}>
-                            GENERAL
-                        </p>
-                        <p style={{ margin: '2px 0 0', fontSize: '20px', fontWeight: 'bold', color: '#818cf8', fontFamily: 'Georgia, serif' }}>
-                            {Math.round(cert?.weighted_score || 0)}%
-                        </p>
-                    </div>
-                </div>
+                {/* Spacer to replace the grid */}
+                <div style={{ height: '40px' }} />
 
                 {/* Footer */}
                 <div style={{ marginTop: 'auto', paddingTop: '16px', width: '100%', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
