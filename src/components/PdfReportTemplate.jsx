@@ -148,7 +148,7 @@ export const PdfReportTemplate = React.forwardRef(({ examSummaryData, testTypes,
             
             {/* Footer */}
             <div className="mt-12 pt-6 border-t border-slate-200 text-center">
-                <p className="text-xs text-slate-400 font-bold">Generado automáticamente por Integrasoft Testing Platform</p>
+                <p className="text-xs text-slate-400 font-bold">Generado automáticamente por Test Mastery Platform</p>
             </div>
         </div>
     );
