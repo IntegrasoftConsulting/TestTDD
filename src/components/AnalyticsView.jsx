@@ -1,7 +1,10 @@
-import React from 'react';
-import { BarChart3 } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { BarChart3, Download, Loader2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import ExamResultsSummary from './ExamResultsSummary';
+import PdfReportTemplate from './PdfReportTemplate';
 
 const AnalyticsView = ({ 
     isAdmin, adminAnalysisTab, setAdminAnalysisTab, 
@@ -11,8 +14,56 @@ const AnalyticsView = ({
     surveyFilter, setSurveyFilter, availableSurveys = [],
     examSummaryData
 }) => {
+    const pdfRef = useRef(null);
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+    const handleGeneratePdf = async () => {
+        if (!pdfRef.current) return;
+        setIsGeneratingPdf(true);
+        try {
+            // Un pequeño retraso para asegurar que los gráficos se hayan renderizado
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            let heightLeft = pdfHeight;
+            let position = 0;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            // Añadir primera página
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
+
+            // Añadir más páginas si es necesario
+            while (heightLeft >= 0) {
+                position = heightLeft - pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save('Reporte_Final_Resultados.pdf');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Hubo un error al generar el PDF. Por favor, intenta nuevamente.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 relative">
+            <div style={{ position: 'absolute', top: '-10000px', left: '-10000px' }}>
+                <PdfReportTemplate 
+                    ref={pdfRef} 
+                    examSummaryData={examSummaryData} 
+                    testTypes={testTypes} 
+                    surveyMetrics={surveyMetrics} 
+                />
+            </div>
             <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between md:items-center bg-slate-50/50 dark:bg-slate-800/30 gap-4">
                 <h3 className="font-black text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
                     <BarChart3 className="text-indigo-600 dark:text-indigo-400" /> Analíticas de la Plataforma
@@ -39,6 +90,16 @@ const AnalyticsView = ({
                                 Resultados Generales
                             </button>
                         </div>
+                    )}
+                    {isAdmin && adminAnalysisTab === 'examResults' && (
+                        <button
+                            onClick={handleGeneratePdf}
+                            disabled={isGeneratingPdf}
+                            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold shadow-md transition-all ${isGeneratingPdf ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                        >
+                            {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            Generar Informe PDF
+                        </button>
                     )}
                     {adminAnalysisTab !== 'examResults' && (
                     <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-2xl">

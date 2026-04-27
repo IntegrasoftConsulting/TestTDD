@@ -171,7 +171,7 @@ export const useAppLogic = () => {
         try {
             const { data, error: confError } = await supabase
                 .from('test_config')
-                .select('test_id, display_name, description, order_index, is_active, default_score')
+                .select('test_id, display_name, description, order_index, is_active, default_score, theoretical_context, evaluated_knowledge')
                 .order('order_index', { ascending: true });
             if (confError) throw confError;
             
@@ -205,7 +205,9 @@ export const useAppLogic = () => {
                     description: item.description || '',
                     order_index: item.order_index ?? 99,
                     is_active: item.is_active,
-                    default_score: item.default_score ?? 0
+                    default_score: item.default_score ?? 0,
+                    theoretical_context: item.theoretical_context ?? '',
+                    evaluated_knowledge: item.evaluated_knowledge ?? ''
                 })));
             } else {
                 setTestTypes(DEFAULT_TEST_TYPES);

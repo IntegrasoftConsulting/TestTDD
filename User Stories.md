@@ -1046,3 +1046,42 @@ CREATE TABLE public.certificates (
 - **Dado** que el estudiante todavía se encuentre en estado "Pendiente" o "En revisión" (nota insuficiente)
 - **Cuando** explore el dashboard y el resumen de notas
 - **Entonces** el botón de publicación de LinkedIn no debe existir ni ser accesible de ninguna forma en la interfaz para prevenir divulgaciones tempranas.
+
+---
+
+### HU-36: Generación de Informe en PDF de Resultados Finales
+
+**Como** administrador o coordinador de evaluaciones
+**Quiero** generar y descargar un informe en formato PDF con los resultados finales de la capacitación
+**Para** presentar un consolidado formal que incluya métricas de certificación, desempeño promedio por disciplina y los niveles de satisfacción de los estudiantes.
+
+#### Criterios de Aceptación
+
+**Criterios de Aceptación 1: Accesibilidad a la generación del informe**
+- **Dado** que el administrador se encuentra en el Dashboard global o en la pestaña de "Resultados Generales"
+- **Cuando** visualiza los controles de la plataforma
+- **Entonces** debe tener disponible un botón claramente visible etiquetado como "Generar Informe PDF" o "Descargar Reporte Final".
+
+**Criterios de Aceptación 2: Métricas de certificación y conocimiento global**
+- **Dado** que se genera el documento PDF
+- **Cuando** el usuario revisa su contenido
+- **Entonces** el informe debe incluir explícitamente:
+  - La cantidad total de personas que alcanzaron la certificación (Aprobados ≥ 70%).
+  - La cantidad total de personas que no alcanzaron la certificación (En revisión < 70%).
+  - El porcentaje promedio general de conocimiento de todo el equipo evaluado.
+
+**Criterios de Aceptación 3: Visualización de promedios mediante Gráfico Radial (Radar)**
+- **Dado** que el informe consolida los promedios de cada evaluación (TDD, BDD, SOLID, DDD, SDD, etc.)
+- **Cuando** se despliega la sección de conocimiento por disciplina
+- **Entonces** el informe debe integrar un gráfico de radar (Radar Chart) que compare el promedio general obtenido en cada uno de los tests evaluados.
+
+**Criterios de Aceptación 4: Contexto teórico y conocimiento evaluado por test**
+- **Dado** que el informe detalla los resultados por cada disciplina evaluada
+- **Cuando** se visualiza la información de un test en específico
+- **Entonces** el informe debe incluir una explicación del contexto teórico base del test y qué conocimiento específico evalúa
+- **Y** a continuación, debe mostrar el promedio de calificación obtenido por el grupo en esa prueba puntual.
+
+**Criterios de Aceptación 5: Inclusión de calificaciones de encuestas de satisfacción**
+- **Dado** que se ha recolectado feedback en las encuestas de las sesiones (TDD_SESSION, BDD_SESSION, etc.)
+- **Cuando** se visualiza la sección final del PDF
+- **Entonces** el informe debe consolidar e incluir las calificaciones generales (promedios de Contenido, Instructor y Práctica) dadas en cada encuesta de satisfacción disponible.
